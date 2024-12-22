@@ -34,7 +34,7 @@ jobs:
         id: fetch-latest-tag
         run: |
           # Fetch the JSON response from the Docker Hub
-          response=$(curl -s "https://registry.hub.docker.com/v2/repositories/shindo806/stock-analysis-consumer/tags")
+          response=$(curl -s "https://registry.hub.docker.com/v2/repositories/shindo806/${PROJECT_NAME}/tags")
 
           # Extract the tag names using jq
           tag=$(echo "$response" | jq -r '.results[0].name')

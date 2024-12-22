@@ -17,7 +17,7 @@ export class NotifyConsumer extends BaseService {
     exchange: 'events',
     queue: 'stock-analysis-notification',
     routingKey: ['stock-analysis.notify'],
-    queueOptions: { durable: false },
+    queueOptions: { durable: true },
     errorHandler: (err, msg) => {
       console.error(err, msg);
     },
