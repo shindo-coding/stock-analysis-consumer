@@ -61,8 +61,3 @@ This error can be resolved by running the following commands
 npm run migration:run
 npm run prisma:generate
 ```
-
-## TODO
-
-- [ ] Add the module to analyze the ticker data before they break the volume, so that we can buy earlier
-- [ ] Check the bad ticker in the market like they can't do the transaction. For example: LUT
