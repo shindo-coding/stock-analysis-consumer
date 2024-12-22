@@ -6,7 +6,7 @@ on:
 
 jobs:
   create_release_id:
-    runs-on: [self-hosted, Linux]
+    runs-on: self-hosted
     timeout-minutes: 20
     env:
       USE_RAND: ${{ inputs.use_rand && 'true' || 'false' }}
@@ -25,7 +25,7 @@ jobs:
           echo "DOCKER_TAG=${DOCKER_TAG}" >> ${GITHUB_OUTPUT}
 
   package_docker:
-    runs-on: [self-hosted, Linux]
+    runs-on: self-hosted
     needs: ["create_release_id"]
 
     env:
