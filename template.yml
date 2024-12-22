@@ -1,0 +1,156 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: "${PROJECT_NAME}"
+    app: "${PROJECT_NAME}"
+    hpa: "true"
+  name: "${PROJECT_NAME}"
+spec:
+  replicas: ${SCALE_MIN}
+  revisionHistoryLimit: 0
+  strategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      service: "${PROJECT_NAME}"
+  template:
+    metadata:
+      labels:
+        service: "${PROJECT_NAME}"
+        app: "${PROJECT_NAME}"
+        hpa: "true"
+    spec:
+      serviceAccountName: "${PROJECT_NAME}"
+      containers:
+        - image: $CI_REGISTRY_IMAGE:$DOCKER_TAG
+          name: "${PROJECT_NAME}"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: ${EXPOSE_PORT}
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+            periodSeconds: 10
+            failureThreshold: 3
+          ports:
+            - name: http
+              containerPort: ${EXPOSE_PORT}
+            - name: grpc
+              containerPort: 5000
+          resources:
+            requests:
+              memory: ${MEM_MIN}
+              cpu: ${CPU_MIN}
+            limits:
+              memory: ${MEM_MAX}
+              cpu: ${CPU_MAX}
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "30"]
+          env:
+            - name: TZ
+              value: "Asia/Ho_Chi_Minh"
+            - name: DB_HOST
+              value: "mysql"
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_USERNAME
+              value: "root"
+            - name: DB_PASSWORD
+              value: "${DB_PASSWORD}"
+            - name: DB_NAME_INDEX
+              value: "stock"
+            - name: DB_NAME_STOCK
+              value: "stock"
+            - name: DATABASE_URL
+              value: "${DATABASE_URL}"
+            - name: PUSHOVER_USER
+              value: "${PUSHOVER_USER}"
+            - name: PUSHOVER_TOKEN
+              value: "${PUSHOVER_TOKEN}"
+            - name: RABBITMQ_URL
+              value: "${RABBITMQ_URL}"
+      terminationGracePeriodSeconds: 101
+      restartPolicy: Always
+      enableServiceLinks:  false
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "2"
+          - name: timeout
+            value: "3"
+          - name: attempts
+            value: "2"
+          - name: single-request
+          - name: single-request-reopen
+          - name: use-vc
+          - name: no-reload
+      initContainers:
+        - image: $CI_REGISTRY_IMAGE:$DOCKER_TAG
+          name: "${PROJECT_NAME}-init"
+          command: ["npm", "run", "migration:run"]
+          env:
+            - name: TZ
+              value: "Asia/Ho_Chi_Minh"
+            - name: DB_HOST
+              value: "mysql"
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_USERNAME
+              value: "root"
+            - name: DB_PASSWORD
+              value: "${DB_PASSWORD}"
+            - name: DB_NAME_INDEX
+              value: "stock"
+            - name: DB_NAME_STOCK
+              value: "stock"
+            - name: DATABASE_URL
+              value: "${DATABASE_URL}"
+            - name: PUSHOVER_USER
+              value: "${PUSHOVER_USER}"
+            - name: PUSHOVER_TOKEN
+              value: "${PUSHOVER_TOKEN}"
+            - name: RABBITMQ_URL
+              value: "${RABBITMQ_URL}"
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: "${PROJECT_NAME}"
+    app: "${PROJECT_NAME}"
+  name: "${PROJECT_NAME}"
+spec:
+  ports:
+    - port: 80
+      targetPort: ${EXPOSE_PORT}
+      appProtocol: http
+      name: http
+    - port: 5000
+      targetPort: 5000
+      appProtocol: grpc
+      name: grpc
+  selector:
+    app: "${PROJECT_NAME}"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: "${PROJECT_NAME}"
+  labels:
+    service: "${PROJECT_NAME}"
+    app: "${PROJECT_NAME}"
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: "${PROJECT_NAME}"
+spec:
+  maxUnavailable: "50%"
+  selector:
+    matchLabels:
+      app: "${PROJECT_NAME}"

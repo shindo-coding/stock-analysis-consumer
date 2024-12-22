@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  mysql:
+    image: arm64v8/mariadb:10.2
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: stock
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: root
+    ports:
+      - 3306:3306
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - stock-analysis
+  rabbitmq:
+    image: arm64v8/rabbitmq:4.0.5-management
+    volumes:
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      - ./rabbitmq/definitions.json:/etc/rabbitmq/definitions.json
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: root
+    ports:
+      - 5672:5672
+      - 15672:15672
+    networks:
+      - stock-analysis
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  stock-analysis:
+    driver: bridge

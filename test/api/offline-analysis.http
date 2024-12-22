@@ -1,0 +1,3 @@
+GET http://localhost:3000/offline-analysis/imp
+
+# GET https://banggia.dag.vn/rest/market/api/history?symbol=imp&resolution=1D&from=1729650553625&to=1729909753625
