@@ -24,11 +24,13 @@ ENV TZ="Asia/Ho_Chi_Minh"
 
 WORKDIR /app
 
-RUN apk add --no-cache tzdata \
-    && addgroup -g 1001 -S nodejs \
-    && adduser -S nodejs -u 1001 \
-    && cp /usr/share/zoneinfo/$TZ /etc/localtime \
-    && echo $TZ > /etc/timezone
+RUN apt-get update && apt-get install -y --no-install-recommends tzdata \
+    && groupadd -g 1001 nodejs \
+    && useradd -u 1001 -g nodejs -s /bin/bash -m nodejs \
+    && ln -fs /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/package*.json ./
 RUN npm ci --only=production && npm cache clean --force
