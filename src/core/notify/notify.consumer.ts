@@ -30,7 +30,7 @@ export class NotifyConsumer extends BaseService {
     }
 
     try {
-      const limit = 50;
+      const limit = 3;
       let offset = 0;
       while (true) {
         const result =
