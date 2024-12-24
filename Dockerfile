@@ -1,5 +1,5 @@
 # Build stage
-FROM node:20.6-slim AS build
+FROM node:20.6-alpine AS build
 
 ENV TZ="Asia/Ho_Chi_Minh"
 
@@ -16,7 +16,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # Production stage
-FROM node:20.6-slim
+FROM node:20.6-alpine
 
 ENV NODE_ENV=production
 ENV EXPOSE_PORT=80
@@ -24,16 +24,14 @@ ENV TZ="Asia/Ho_Chi_Minh"
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends tzdata \
-    && groupadd -g 1001 nodejs \
-    && useradd -u 1001 -g nodejs -s /bin/bash -m nodejs \
-    && ln -fs /usr/share/zoneinfo/$TZ /etc/localtime \
-    && echo $TZ > /etc/timezone \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache tzdata \
+    && addgroup -g 1001 -S nodejs \
+    && adduser -S nodejs -u 1001 \
+    && cp /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone
 
 COPY --from=build /app/package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci --only=production
 
 COPY --chown=nodejs:nodejs --from=build /app/node_modules/.prisma/client  ./node_modules/.prisma/client
 COPY --chown=nodejs:nodejs --from=build /app/prisma /app/prisma
