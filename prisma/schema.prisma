@@ -135,3 +135,12 @@ model DatabricksHistoricalData {
   reasons String?
   riskLevel String
 }
+
+model TickerSuggestion {
+  id Int @id @default(autoincrement())
+  code String @unique
+  userId String
+  createdAt  DateTime   @default(now())
+
+  @@index(fields: [code, userId])
+}
