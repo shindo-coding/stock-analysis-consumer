@@ -205,3 +205,89 @@ export interface WatchlistNotification {
   description: string;
   riskLevel: string;
 }
+
+export interface UserPost {
+  postID: number
+  userName: any
+  user: User
+  title: any
+  description: any
+  summary: any
+  type: number
+  newsType: any
+  videoUrl: any
+  videoThumbnailUrl: any
+  videoWidth: any
+  videoHeight: any
+  language: string
+  postGroup: any
+  postSource: any
+  isSourceContentFull: boolean
+  postSourceUrl: any
+  content: string
+  originalContent: string
+  date: string
+  priority: number
+  hasImage: boolean
+  hasFile: boolean
+  link: string
+  linkImage: any
+  linkTitle: any
+  linkDescription: any
+  sentiment: number
+  approved: boolean
+  isTop: boolean
+  isExpertIdea: boolean
+  liked: boolean
+  totalLikes: number
+  totalReplies: number
+  totalShares: number
+  replyToPostID: any
+  referToPostID: any
+  taggedSymbols: TaggedSymbol[]
+  taggedIndividuals: any[]
+  taggedHashTags: any[]
+  taggedUsers: any[]
+  files: any[]
+  roomID: any
+  roomName: any
+  isRoomSticky: boolean
+  videoType: any
+  isVideo: boolean
+  isEmagazine: boolean
+  isInfographic: boolean
+  lastRepliedDate: any
+  isLivestream: boolean
+  livestreamStarted: boolean
+  livestreamEnded: boolean
+  streamingUrl: any
+  streamingKey: any
+  youtubeStreamingUrl: any
+  youtubeStreamingKey: any
+  facebookStreamingUrl: any
+  facebookStreamingKey: any
+  livestreamAction: boolean
+  livestreamActionTitle: any
+  livestreamActionUrl: any
+  livestreamActionRoute: any
+  repliesDisabled: boolean
+  repliesModerationRequired: boolean
+  pendingApproval: boolean
+}
+
+export interface User {
+  id: string
+  name: string
+  bio: any
+  isAuthentic: boolean
+  followed: boolean
+}
+
+export interface TaggedSymbol {
+  symbol: string
+  price: number
+  change: number
+  percentChange: number
+  changeSince: number
+  percentChangeSince: number
+}
