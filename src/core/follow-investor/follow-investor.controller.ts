@@ -1,7 +1,8 @@
-import { Controller, Get, Inject, Logger } from '@nestjs/common';
+import { Controller, Get, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { StockRepository } from 'src/data/stock/stock.repository';
 import { FollowInvestorService } from './follow-investor.service';
+import { RabbitMqService } from 'src/infra/rabbitmq/rabbitmq.service';
 
 @Controller('follow-investor')
 export class FollowInvestorController {
@@ -10,6 +11,7 @@ export class FollowInvestorController {
 	constructor(
 		private readonly stockRepository: StockRepository,
 		private readonly followInvestorService: FollowInvestorService,
+		private readonly rabbitMqService: RabbitMqService,
 	) {
 	}
 
@@ -19,6 +21,10 @@ export class FollowInvestorController {
 			'Start getting ticker suggestions from good investors',
 		);
 		await this.getTickerSuggestions();
+		await this.rabbitMqService.publishMessage({
+			message: 'Ticker suggestions job is finished',
+			routingKey: 'stock-analysis.job.finished',
+		});
 	}
 
 	@Get()
@@ -28,7 +34,7 @@ export class FollowInvestorController {
 
 		const [tickerSuggestionsFromHomepage, tickerSuggestionsFromPostComment] =
 			await Promise.all([
-				this.followInvestorService.getTickerSuggestionsFromPostComment(),
+				this.followInvestorService.getTickerSuggestionsFromHomepage(),
 				this.followInvestorService.getTickerSuggestionsFromPostComment(),
 			]);
 		const tickers = [

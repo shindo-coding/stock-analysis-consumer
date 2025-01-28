@@ -37,7 +37,7 @@
     {
       "name": "stock-analysis-notification",
       "vhost": "/",
-      "durable": false,
+      "durable": true,
       "auto_delete": false,
       "arguments": {}
     },
