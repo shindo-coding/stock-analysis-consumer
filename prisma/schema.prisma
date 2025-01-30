@@ -140,6 +140,7 @@ model TickerSuggestion {
   id Int @id @default(autoincrement())
   code String @unique
   userId String
+  postId String?
   createdAt  DateTime   @default(now())
 
   @@index(fields: [code, userId])

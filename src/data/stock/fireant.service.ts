@@ -42,7 +42,7 @@ export class FireAntService {
 		// https://restv2.fireant.vn/posts?symbol=SAS&type=1&offset=0&limit=30
 		const limit = 100;
 		let offset = 0;
-		const URL = `${this.#baseUrl}/posts?symbol=${ticker.toUpperCase()}&type=1&offset=${offset}&limit=${limit}`;
+		const URL = `${this.#baseUrl}/posts?symbol=${ticker.toUpperCase()}&type=0&offset=${offset}&limit=${limit}`;
 
 		try {
 			const res = this.httpService.get(URL, {
@@ -52,7 +52,6 @@ export class FireAntService {
 			});
 			const { data } = await firstValueFrom(res);
 			const allPosts = (data as UserPost[]) || [];
-			console.log('allPosts', allPosts);
 
 			return allPosts.map((post) => post.postID);
 		} catch (err) {
@@ -88,6 +87,7 @@ export class FireAntService {
 					const isUserCommented = allPosts.some(
 						(post) => post.user.id === user.id,
 					);
+					console.log('isUserCommented', isUserCommented, ticker);
 					if (isUserCommented) {
 						tickerSuggestions.push(ticker);
 						break;

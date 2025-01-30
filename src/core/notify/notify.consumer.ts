@@ -24,10 +24,6 @@ export class NotifyConsumer extends BaseService {
 		},
 	})
 	public async consume(msg: any, amqpMsg: ConsumeMessage) {
-		this.logger.verbose(`Received message: ${JSON.stringify(msg)}`);
-		this.logger.verbose(
-			`Received amqp original message: ${JSON.stringify(amqpMsg)}`,
-		);
 		const routingKey = amqpMsg.fields.routingKey;
 		switch (routingKey) {
 			case 'stock-analysis.notify':

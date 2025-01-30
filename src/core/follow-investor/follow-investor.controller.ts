@@ -15,7 +15,7 @@ export class FollowInvestorController {
 	) {
 	}
 
-	// @Cron('0 */2 * * *') // Run every 2 hours
+	@Cron('0 5,12,23 * * *') // Run at 5:00, 12:00, 23:00 every day
 	async process() {
 		this.logger.verbose(
 			'Start getting ticker suggestions from good investors',
