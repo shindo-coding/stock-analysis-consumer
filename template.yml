@@ -6,6 +6,7 @@ metadata:
     app: "${PROJECT_NAME}"
     hpa: "true"
   name: "${PROJECT_NAME}"
+  namespace: default
 spec:
   replicas: ${SCALE_MIN}
   revisionHistoryLimit: 0
