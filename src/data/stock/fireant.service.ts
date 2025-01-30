@@ -52,6 +52,7 @@ export class FireAntService {
 			});
 			const { data } = await firstValueFrom(res);
 			const allPosts = (data as UserPost[]) || [];
+			console.log('allPosts', allPosts);
 
 			return allPosts.map((post) => post.postID);
 		} catch (err) {

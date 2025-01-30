@@ -35,6 +35,7 @@ export class FollowInvestorService {
 			const tickers = await this.fireantService.getTickerSuggestionsByUser(
 				user.id,
 			);
+			this.logger.verbose(`Ticker suggestions: ${tickers}`);
 			return tickers;
 		} catch (err) {
 			this.logger.error(err);
