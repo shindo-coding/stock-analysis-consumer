@@ -291,3 +291,8 @@ export interface TaggedSymbol {
   changeSince: number
   percentChangeSince: number
 }
+
+export interface PostCommentTickerSuggestion {
+  ticker: string;
+  postId: string;
+}

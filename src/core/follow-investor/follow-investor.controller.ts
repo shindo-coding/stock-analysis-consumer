@@ -12,14 +12,11 @@ export class FollowInvestorController {
 		private readonly stockRepository: StockRepository,
 		private readonly followInvestorService: FollowInvestorService,
 		private readonly rabbitMqService: RabbitMqService,
-	) {
-	}
+	) {}
 
 	@Cron('0 5,12,23 * * *') // Run at 5:00, 12:00, 23:00 every day
 	async process() {
-		this.logger.verbose(
-			'Start getting ticker suggestions from good investors',
-		);
+		this.logger.verbose('Start getting ticker suggestions from good investors');
 		await this.getTickerSuggestions();
 		await this.rabbitMqService.publishMessage({
 			message: 'Ticker suggestions job is finished',
@@ -37,15 +34,20 @@ export class FollowInvestorController {
 				this.followInvestorService.getTickerSuggestionsFromHomepage(),
 				this.followInvestorService.getTickerSuggestionsFromPostComment(),
 			]);
-		const tickers = [
+		const suggestions = [
 			...tickerSuggestionsFromHomepage,
 			...tickerSuggestionsFromPostComment,
 		];
 
-		for (const ticker of tickers) {
-			await this.stockRepository.insertTickerSuggestion(ticker, userId);
+		for (const suggestion of suggestions) {
+			const record = {
+				userId,
+				ticker: suggestion.ticker,
+				postId: suggestion.postId,
+			};
+			await this.stockRepository.insertTickerSuggestion(record);
 		}
 
-		return tickers;
+		return suggestions;
 	}
 }

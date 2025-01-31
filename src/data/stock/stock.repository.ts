@@ -464,20 +464,27 @@ export class StockRepository {
 		return data.map((item) => item.code);
 	}
 
-	async insertTickerSuggestion(ticker: string, userId: string) {
+	async insertTickerSuggestion({
+		ticker,
+		userId,
+		postId,
+	}: { ticker: string; userId: string; postId: string }) {
 		try {
 			const result = await this.prisma.tickerSuggestion.upsert({
 				where: {
 					code: ticker.toUpperCase(),
+					postId,
 					userId,
 				},
 				create: {
 					code: ticker.toUpperCase(),
 					userId,
+					postId,
 				},
 				update: {
 					code: ticker.toUpperCase(),
 					userId,
+					postId,
 					createdAt: new Date(),
 				},
 			});

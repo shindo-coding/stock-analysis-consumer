@@ -1,7 +1,7 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
-import { UserPost } from './types';
+import { PostCommentTickerSuggestion, UserPost } from './types';
 import { removeDuplicates } from 'src/util/array';
 
 @Injectable()
@@ -13,7 +13,9 @@ export class FireAntService {
 
 	constructor(private readonly httpService: HttpService) {}
 
-	async getTickerSuggestionsByUser(userId: string): Promise<string[]> {
+	async getTickerSuggestionsByUser(
+		userId: string,
+	): Promise<PostCommentTickerSuggestion[]> {
 		const limit = 100;
 		let offset = 0;
 		const URL = `${this.#baseUrl}/posts?userId=${userId}&type=0&offset=${offset}&limit=${limit}`;
@@ -27,12 +29,20 @@ export class FireAntService {
 			const { data } = await firstValueFrom(res);
 			const allPosts = data as UserPost[];
 
-			let tickers = allPosts.map((post) =>
-				post.taggedSymbols.map((item) => item.symbol),
-			);
-			tickers = tickers.filter((ticker) => ticker.length > 3);
+			let suggestions = allPosts.map((post) => {
+				const tickers = removeDuplicates(
+					post.taggedSymbols
+						.filter((item) => item.symbol.length <= 3)
+						.map((item) => item.symbol),
+				);
 
-			return removeDuplicates(tickers.flat());
+				return tickers.map((ticker) => ({
+					ticker,
+					postId: String(post.postID),
+				}));
+			});
+
+			return suggestions.flat();
 		} catch (err) {
 			this.#logger.error(err);
 		}
@@ -61,11 +71,11 @@ export class FireAntService {
 
 	async getTickerSuggestionsByPostComment(
 		tickers: string[],
-	): Promise<string[]> {
+	): Promise<PostCommentTickerSuggestion[]> {
 		const user = {
 			id: 'F66E6BCA-E510-4E25-8AC3-911FDA769B8B', // Tuấn GVIN
 		};
-		const tickerSuggestions: string[] = [];
+		const postCommentTickerSuggestions: PostCommentTickerSuggestion[] = [];
 
 		for (const ticker of tickers) {
 			const postIds = await this.getPostIdsByTicker(ticker);
@@ -87,9 +97,11 @@ export class FireAntService {
 					const isUserCommented = allPosts.some(
 						(post) => post.user.id === user.id,
 					);
-					console.log('isUserCommented', isUserCommented, ticker);
 					if (isUserCommented) {
-						tickerSuggestions.push(ticker);
+						postCommentTickerSuggestions.push({
+							ticker,
+							postId: String(postId),
+						});
 						break;
 					}
 				}
@@ -98,6 +110,6 @@ export class FireAntService {
 			}
 		}
 
-		return tickerSuggestions;
+		return postCommentTickerSuggestions;
 	}
 }

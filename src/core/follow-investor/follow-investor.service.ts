@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { marketCodeTableNameMap } from 'src/constant/stock-market';
 import { FireAntService } from 'src/data/stock/fireant.service';
 import { StockRepository } from 'src/data/stock/stock.repository';
+import { PostCommentTickerSuggestion } from 'src/data/stock/types';
 
 @Injectable()
 export class FollowInvestorService {
@@ -12,7 +13,7 @@ export class FollowInvestorService {
 		private readonly fireantService: FireAntService,
 	) {}
 
-	async getTickerSuggestionsFromPostComment(): Promise<string[]> {
+	async getTickerSuggestionsFromPostComment(): Promise<PostCommentTickerSuggestion[]> {
 		try {
 			const tickers = [];
 			const marketTables = Object.values(marketCodeTableNameMap);
@@ -27,7 +28,7 @@ export class FollowInvestorService {
 		}
 	}
 
-	async getTickerSuggestionsFromHomepage(): Promise<string[]> {
+	async getTickerSuggestionsFromHomepage(): Promise<PostCommentTickerSuggestion[]> {
 		try {
 			const user = {
 				id: 'F66E6BCA-E510-4E25-8AC3-911FDA769B8B', // Tuấn GVIN
