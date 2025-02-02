@@ -144,4 +144,5 @@ model TickerSuggestion {
   createdAt  DateTime   @default(now())
 
   @@index(fields: [code, userId])
+  @@unique([code, postId, userId])
 }

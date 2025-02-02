@@ -24,6 +24,14 @@ export class FollowInvestorController {
 		});
 	}
 
+	@Get('debug')
+	async debug() {
+		this.getTickerSuggestions();
+		return {
+			message: 'Ticker suggestions job is running',
+		}
+	}
+
 	@Get()
 	async getTickerSuggestions() {
 		const userId = 'F66E6BCA-E510-4E25-8AC3-911FDA769B8B'; // Tuấn GVIN

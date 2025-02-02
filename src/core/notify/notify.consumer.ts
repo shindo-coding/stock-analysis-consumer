@@ -20,7 +20,7 @@ export class NotifyConsumer extends BaseService {
 		routingKey: ['stock-analysis.notify', 'stock-analysis.job.finished'],
 		queueOptions: { durable: true },
 		errorHandler: (err, msg) => {
-			// console.error(err, msg);
+			console.error('NotifyConsumer error', err, msg);
 		},
 	})
 	public async consume(msg: any, amqpMsg: ConsumeMessage) {
