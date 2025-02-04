@@ -29,33 +29,36 @@ export class FollowInvestorController {
 		this.getTickerSuggestions();
 		return {
 			message: 'Ticker suggestions job is running',
-		}
+		};
 	}
 
 	@Get()
 	async getTickerSuggestions() {
-		const userId = 'F66E6BCA-E510-4E25-8AC3-911FDA769B8B'; // Tuấn GVIN
-		// Get ticker suggestions from user homepage
-
-		const [tickerSuggestionsFromHomepage, tickerSuggestionsFromPostComment] =
-			await Promise.all([
-				this.followInvestorService.getTickerSuggestionsFromHomepage(),
-				this.followInvestorService.getTickerSuggestionsFromPostComment(),
-			]);
-		const suggestions = [
-			...tickerSuggestionsFromHomepage,
-			...tickerSuggestionsFromPostComment,
+		const userIds = [
+			'F66E6BCA-E510-4E25-8AC3-911FDA769B8B', // Tuấn GVIN
+			'7e1e4073-4d0f-4037-ba63-7764e989008f', // Khắc Cốt Ghi Tâm
 		];
+		for (const userId of userIds) {
+			const [tickerSuggestionsFromHomepage, tickerSuggestionsFromPostComment] =
+				await Promise.all([
+					this.followInvestorService.getTickerSuggestionsFromHomepage(),
+					this.followInvestorService.getTickerSuggestionsFromPostComment(),
+				]);
+			const suggestions = [
+				...tickerSuggestionsFromHomepage,
+				...tickerSuggestionsFromPostComment,
+			];
 
-		for (const suggestion of suggestions) {
-			const record = {
-				userId,
-				ticker: suggestion.ticker,
-				postId: suggestion.postId,
-			};
-			await this.stockRepository.insertTickerSuggestion(record);
+			for (const suggestion of suggestions) {
+				const record = {
+					userId,
+					ticker: suggestion.ticker,
+					postId: suggestion.postId,
+				};
+				await this.stockRepository.insertTickerSuggestion(record);
+			}
+
+			return suggestions;
 		}
-
-		return suggestions;
 	}
 }
