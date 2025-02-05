@@ -13,7 +13,7 @@ export class FollowInvestorService {
 		private readonly fireantService: FireAntService,
 	) {}
 
-	async getTickerSuggestionsFromPostComment(): Promise<PostCommentTickerSuggestion[]> {
+	async getTickerSuggestionsFromPostComment(userIds: string[]): Promise<PostCommentTickerSuggestion[]> {
 		try {
 			const tickers = [];
 			const marketTables = Object.values(marketCodeTableNameMap);
@@ -22,20 +22,21 @@ export class FollowInvestorService {
 				tickers.push(...codes);
 			}
 
-			return this.fireantService.getTickerSuggestionsByPostComment(tickers);
+			return this.fireantService.getTickerSuggestionsByPostComment(tickers, userIds);
 		} catch (error) {
 			this.logger.error(error);
 		}
 	}
 
-	async getTickerSuggestionsFromHomepage(): Promise<PostCommentTickerSuggestion[]> {
+	async getTickerSuggestionsFromHomepage(userIds: string[]): Promise<PostCommentTickerSuggestion[]> {
 		try {
-			const user = {
-				id: 'F66E6BCA-E510-4E25-8AC3-911FDA769B8B', // Tuấn GVIN
-			};
-			const tickers = await this.fireantService.getTickerSuggestionsByUser(
-				user.id,
-			);
+			const tickers = [];
+			for (const userId of userIds) {
+				const suggestions = await this.fireantService.getTickerSuggestionsByUser(
+					userId,
+				);
+				tickers.push(...suggestions);
+			}
 			return tickers;
 		} catch (err) {
 			this.logger.error(err);

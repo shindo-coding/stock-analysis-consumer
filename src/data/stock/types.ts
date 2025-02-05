@@ -295,4 +295,5 @@ export interface TaggedSymbol {
 export interface PostCommentTickerSuggestion {
   ticker: string;
   postId: string;
+  userId: string;
 }

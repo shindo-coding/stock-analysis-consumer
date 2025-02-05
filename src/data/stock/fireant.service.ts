@@ -38,6 +38,7 @@ export class FireAntService {
 
 				return tickers.map((ticker) => ({
 					ticker,
+					userId,
 					postId: String(post.postID),
 				}));
 			});
@@ -71,10 +72,8 @@ export class FireAntService {
 
 	async getTickerSuggestionsByPostComment(
 		tickers: string[],
+		userIds: string[],
 	): Promise<PostCommentTickerSuggestion[]> {
-		const user = {
-			id: 'F66E6BCA-E510-4E25-8AC3-911FDA769B8B', // Tuấn GVIN
-		};
 		const postCommentTickerSuggestions: PostCommentTickerSuggestion[] = [];
 
 		for (const ticker of tickers) {
@@ -91,19 +90,20 @@ export class FireAntService {
 						},
 					});
 					const { data } = await firstValueFrom(res);
-					const allPosts = data as UserPost[];
+					const allCommentPosts = data as UserPost[];
 
 					// Find a reply from user
-					const isUserCommented = allPosts.some(
-						(post) => post.user.id === user.id,
-					);
-					if (isUserCommented) {
+					const userCommentedPosts = this.findMatchingUsers(allCommentPosts, userIds);
+					if (userCommentedPosts.length === 0) {
+						continue;
+					}
+					userCommentedPosts.forEach(post => {
 						postCommentTickerSuggestions.push({
 							ticker,
+							userId: post.user.id,
 							postId: String(postId),
 						});
-						break;
-					}
+					});
 				}
 			} catch (err) {
 				this.#logger.error(err);
@@ -111,5 +111,9 @@ export class FireAntService {
 		}
 
 		return postCommentTickerSuggestions;
+	}
+
+	private findMatchingUsers(posts: UserPost[], userIds: string[]) {
+		return posts.filter((post) => userIds.includes(post.user.id));
 	}
 }
