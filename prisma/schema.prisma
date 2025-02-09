@@ -142,6 +142,7 @@ model TickerSuggestion {
   userId String
   postId String?
   createdAt  DateTime   @default(now())
+  isNotificationSent Boolean @default(false)
 
   @@index(fields: [code, userId])
   @@unique([code, postId, userId])

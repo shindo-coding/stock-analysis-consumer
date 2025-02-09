@@ -3,6 +3,7 @@ import { PrismaService } from 'src/infra/prisma/prisma.service';
 import {
 	AllTableName,
 	MarketStock,
+	PostCommentTickerSuggestion,
 	StockMarketTableName,
 	StockWatchlist,
 	StockWatchlistNotification,
@@ -491,6 +492,23 @@ export class StockRepository {
 			return result;
 		} catch (err) {
 			logMessage('error', { message: `insertTickerSuggestion: ${err}` });
+		}
+	}
+
+	async getTickerSuggestions(): Promise<PostCommentTickerSuggestion[]> {
+		try {
+			const result = await this.prisma.tickerSuggestion.findMany({
+				where: {
+					isNotificationSent: false,
+				},
+			});
+			return result.map(item => ({
+				ticker: item.code,
+				userId: item.userId,
+				postId: item.postId,
+			}));
+		} catch (err) {
+			logMessage('error', { message: `getTickerSuggestions: ${err}` });
 		}
 	}
 }

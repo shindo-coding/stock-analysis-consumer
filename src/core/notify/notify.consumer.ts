@@ -6,7 +6,7 @@ import {
 	WatchlistNotification,
 	WatchlistTableName,
 } from 'src/data/stock/types';
-import { formatStockWatchlistMessage } from 'src/util/notification';
+import { formatStockWatchlistMessage, formatTickerSuggestionMessage } from 'src/util/notification';
 
 @Injectable()
 export class NotifyConsumer extends BaseService {
@@ -71,13 +71,10 @@ export class NotifyConsumer extends BaseService {
 	}
 
 	private async handleJobFinished(msg: any) {
-		const message = msg.message;
-		if (!message) {
-			return;
-		}
-
+		const tickerSuggestions = await this.stockRepository.getTickerSuggestions();
+		const { title, message } = formatTickerSuggestionMessage(tickerSuggestions);
 		await this.notificationService.send({
-			title: `Job finished: ${message}`,
+			title,
 			message,
 			html: true,
 		});
