@@ -7,6 +7,7 @@ import { RabbitMqService } from 'src/infra/rabbitmq/rabbitmq.service';
 @Controller('follow-investor')
 export class FollowInvestorController {
 	logger: Logger = new Logger(FollowInvestorController.name);
+	private taskStatus: 'not-started' | 'running' | 'finished' = 'not-started';
 
 	constructor(
 		private readonly stockRepository: StockRepository,
@@ -16,16 +17,32 @@ export class FollowInvestorController {
 
 	@Cron('0 5,12,23 * * *') // Run at 5:00, 12:00, 23:00 every day
 	async process() {
+		if (this.taskStatus === 'running') {
+			this.logger.verbose('Ticker suggestions job is running');
+			return;
+		}
+		this.taskStatus = 'running';
 		this.logger.verbose('Start getting ticker suggestions from good investors');
 		await this.getTickerSuggestions();
 		await this.rabbitMqService.publishMessage({
 			message: { message: 'Ticker suggestions job is finished' },
 			routingKey: 'stock-analysis.job.finished',
 		});
+		this.taskStatus = 'finished';
 	}
 
 	@Get('debug')
 	async debug() {
+		if (this.taskStatus === 'running') {
+			return {
+				message: 'Ticker suggestions job is running',
+			};
+		}
+		if (this.taskStatus === 'finished') {
+			return {
+				message: 'Ticker suggestions job is finished',
+			};
+		}
 		this.getTickerSuggestions();
 		return {
 			message: 'Ticker suggestions job is running',

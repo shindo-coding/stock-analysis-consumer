@@ -483,8 +483,6 @@ export class StockRepository {
 					postId,
 				},
 				update: {
-					code: ticker.toUpperCase(),
-					userId,
 					postId,
 					createdAt: new Date(),
 				},
