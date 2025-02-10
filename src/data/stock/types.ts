@@ -183,7 +183,8 @@ export type StockMarketTableName = 'HSXMarket' | 'upcomMarket' | 'hNXMarket';
 export type WatchlistTableName =
   | 'VolumeWatchlistNotificationDaily'
   | 'VolumeWatchlistNotificationRealtime'
-  | 'PriceWatchlistNotificationRealtime';
+  | 'PriceWatchlistNotificationRealtime'
+  | 'TickerSuggestion';
 export type AllTableName = StockMarketTableName | 'historicalData';
 
 export interface MarketStock {

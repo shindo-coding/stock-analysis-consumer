@@ -6,7 +6,10 @@ import {
 	WatchlistNotification,
 	WatchlistTableName,
 } from 'src/data/stock/types';
-import { formatStockWatchlistMessage, formatTickerSuggestionMessage } from 'src/util/notification';
+import {
+	formatStockWatchlistMessage,
+	formatTickerSuggestionMessage,
+} from 'src/util/notification';
 
 @Injectable()
 export class NotifyConsumer extends BaseService {
@@ -86,6 +89,10 @@ export class NotifyConsumer extends BaseService {
 				message,
 				html: true,
 			});
+			await this.postProcess(
+				'TickerSuggestion',
+				chunk.map((item) => item.code),
+			);
 		}
 	}
 
