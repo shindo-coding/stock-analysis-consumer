@@ -72,12 +72,21 @@ export class NotifyConsumer extends BaseService {
 
 	private async handleJobFinished(msg: any) {
 		const tickerSuggestions = await this.stockRepository.getTickerSuggestions();
-		const { title, message } = formatTickerSuggestionMessage(tickerSuggestions);
-		await this.notificationService.send({
-			title,
-			message,
-			html: true,
-		});
+		// Create chunks of 7 ticker suggestions
+		const chunkSize = 7;
+		const chunks = [];
+		for (let i = 0; i < tickerSuggestions.length; i += chunkSize) {
+			chunks.push(tickerSuggestions.slice(i, i + chunkSize));
+		}
+
+		for (const chunk of chunks) {
+			const { title, message } = formatTickerSuggestionMessage(chunk);
+			await this.notificationService.send({
+				title,
+				message,
+				html: true,
+			});
+		}
 	}
 
 	private async notify(

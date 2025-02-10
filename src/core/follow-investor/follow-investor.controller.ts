@@ -49,6 +49,7 @@ export class FollowInvestorController {
 		const userIds = [
 			'F66E6BCA-E510-4E25-8AC3-911FDA769B8B', // Tuấn GVIN
 			'b2929b48-1710-42c2-ad15-a37cb80adce9', // Panda
+			'0104db64-8e7d-400a-83f9-e32b93ba3c15', // Minh
 		];
 
 		const [tickerSuggestionsFromHomepage, tickerSuggestionsFromPostComment] =

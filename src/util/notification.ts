@@ -27,7 +27,7 @@ export function formatTickerSuggestionMessage(
 
 	const messages = data.map((item) => {
 		const postLink = `${placeholderUrl}/${item.postId}`;
-		return `<li><span style="color:green";>${item.ticker}</span><a href='${postLink}'>Post link</a>`;
+		return `<li><span style="color:green";>${item.ticker}: </span><a href='${postLink}'>Post link</a>`;
 	});
 	return {
 		title,
