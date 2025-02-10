@@ -38,11 +38,6 @@ export class FollowInvestorController {
 				message: 'Ticker suggestions job is running',
 			};
 		}
-		if (this.taskStatus === 'finished') {
-			return {
-				message: 'Ticker suggestions job is finished',
-			};
-		}
 		this.getTickerSuggestions();
 		return {
 			message: 'Ticker suggestions job is running',
