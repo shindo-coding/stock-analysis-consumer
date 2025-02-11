@@ -3,6 +3,7 @@ import { BaseService } from '../base-service';
 import { Nack, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { ConsumeMessage } from 'amqplib';
 import {
+    PostCommentTickerSuggestion,
 	WatchlistNotification,
 	WatchlistTableName,
 } from 'src/data/stock/types';
@@ -77,7 +78,7 @@ export class NotifyConsumer extends BaseService {
 		const tickerSuggestions = await this.stockRepository.getTickerSuggestions();
 		// Create chunks of 7 ticker suggestions
 		const chunkSize = 7;
-		const chunks = [];
+		const chunks: Array<PostCommentTickerSuggestion[]> = [];
 		for (let i = 0; i < tickerSuggestions.length; i += chunkSize) {
 			chunks.push(tickerSuggestions.slice(i, i + chunkSize));
 		}
@@ -91,7 +92,7 @@ export class NotifyConsumer extends BaseService {
 			});
 			await this.postProcess(
 				'TickerSuggestion',
-				chunk.map((item) => item.code),
+				chunk.map((item) => item.ticker),
 			);
 		}
 	}
