@@ -69,8 +69,12 @@ spec:
               value: "${DATABASE_URL}"
             - name: PUSHOVER_USER
               value: "${PUSHOVER_USER}"
-            - name: PUSHOVER_TOKEN
-              value: "${PUSHOVER_TOKEN}"
+            - name: VOLUME_PUSHOVER_TOKEN
+              value: "${VOLUME_PUSHOVER_TOKEN}"
+            - name: PRICE_PUSHOVER_TOKEN
+              value: "${PRICE_PUSHOVER_TOKEN}"
+            - name: GOOD_INVESTOR_PUSHOVER_TOKEN
+              value: "${GOOD_INVESTOR_PUSHOVER_TOKEN}"
             - name: RABBITMQ_URL
               value: "${RABBITMQ_URL}"
       terminationGracePeriodSeconds: 101
@@ -111,8 +115,12 @@ spec:
               value: "${DATABASE_URL}"
             - name: PUSHOVER_USER
               value: "${PUSHOVER_USER}"
-            - name: PUSHOVER_TOKEN
-              value: "${PUSHOVER_TOKEN}"
+            - name: VOLUME_PUSHOVER_TOKEN
+              value: "${VOLUME_PUSHOVER_TOKEN}"
+            - name: PRICE_PUSHOVER_TOKEN
+              value: "${PRICE_PUSHOVER_TOKEN}"
+            - name: GOOD_INVESTOR_PUSHOVER_TOKEN
+              value: "${GOOD_INVESTOR_PUSHOVER_TOKEN}"
             - name: RABBITMQ_URL
               value: "${RABBITMQ_URL}"
 

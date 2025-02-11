@@ -86,6 +86,7 @@ export class NotifyConsumer extends BaseService {
 		for (const chunk of chunks) {
 			const { title, message } = formatTickerSuggestionMessage(chunk);
 			await this.notificationService.send({
+				appName: 'GoodInvestorAnalysis',
 				title,
 				message,
 				html: true,
@@ -103,6 +104,7 @@ export class NotifyConsumer extends BaseService {
 	) {
 		const { title, message } = formatStockWatchlistMessage(tableName, messages);
 		await this.notificationService.send({
+			appName: 'VolumeAnalysis',
 			title,
 			message,
 			html: true,

@@ -41,7 +41,9 @@ jobs:
       DOCKER_TAG: ${{ needs.create_release_id.outputs.tag }}
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       PUSHOVER_USER: ${{ secrets.PUSHOVER_USER }}
-      PUSHOVER_TOKEN: ${{ secrets.PUSHOVER_TOKEN }}
+      VOLUME_PUSHOVER_TOKEN: ${{ secrets.VOLUME_PUSHOVER_TOKEN }}
+      PRICE_PUSHOVER_TOKEN: ${{ secrets.PRICE_PUSHOVER_TOKEN }}
+      GOOD_INVESTOR_PUSHOVER_TOKEN: ${{ secrets.GOOD_INVESTOR_PUSHOVER_TOKEN }}
       RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
 
     steps:
