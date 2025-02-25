@@ -205,6 +205,9 @@ export interface WatchlistNotification {
   createdAt: Date;
   description: string;
   riskLevel: string;
+  price: number;
+  volume: number;
+  totalDealValue: number;
 }
 
 export interface UserPost {

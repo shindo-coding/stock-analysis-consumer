@@ -66,6 +66,10 @@ model VolumeWatchlistNotificationDaily {
   createdAt  DateTime   @default(now())
 
   code String @unique
+  price BigInt @default(0)
+  volume BigInt @default(0)
+  totalDealValue BigInt @default(0)
+
   isNotificationSent Boolean @default(false)
   description String? @default("")
   riskLevel String? @default("")
@@ -76,9 +80,15 @@ model VolumeWatchlistNotificationRealtime {
   createdAt  DateTime   @default(now())
 
   code String @unique
+  price BigInt @default(0)
+  volume BigInt @default(0)
+  totalDealValue BigInt @default(0)
+
   isNotificationSent Boolean @default(false)
   description String? @default("")
   riskLevel String? @default("")
+
+  @@index(fields: [code, isNotificationSent, createdAt])
 }
 
 model PriceWatchlistNotificationRealtime {
@@ -86,9 +96,15 @@ model PriceWatchlistNotificationRealtime {
   createdAt  DateTime   @default(now())
 
   code String @unique
+  price BigInt @default(0)
+  volume BigInt @default(0)
+  totalDealValue BigInt @default(0)
+
   isNotificationSent Boolean @default(false)
   description String? @default("")
   riskLevel String? @default("")
+
+  @@index(fields: [code, isNotificationSent, createdAt])
 }
 
 model HistoricalData {
@@ -134,16 +150,4 @@ model DatabricksHistoricalData {
   isGoodBuyingPoint Boolean
   reasons String?
   riskLevel String
-}
-
-model TickerSuggestion {
-  id Int @id @default(autoincrement())
-  code String @unique
-  userId String
-  postId String?
-  createdAt  DateTime   @default(now())
-  isNotificationSent Boolean @default(false)
-
-  @@index(fields: [code, userId])
-  @@unique([code, postId, userId])
 }

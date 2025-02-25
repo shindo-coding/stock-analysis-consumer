@@ -344,33 +344,6 @@ export class StockRepository {
 		}
 	}
 
-	async insertStockVolumeWatchlistNotification(
-		tableName: WatchlistTableName,
-		ticker: { code: string; description: string; riskLevel: string },
-	) {
-		try {
-			const table = this.prisma[tableName];
-			const result = await table.upsert({
-				where: {
-					code: ticker.code.toUpperCase(),
-				},
-				create: {
-					code: ticker.code.toUpperCase(),
-					description: ticker.description,
-					riskLevel: ticker.riskLevel,
-				},
-				update: {
-					code: ticker.code.toUpperCase(),
-					description: ticker.description,
-					riskLevel: ticker.riskLevel,
-				},
-			});
-			return result;
-		} catch (error) {
-			logMessage('error', { message: error.message });
-		}
-	}
-
 	async getStockWatchlistNotifications(
 		tableName: WatchlistTableName,
 		offset: number = 0,
@@ -380,6 +353,10 @@ export class StockRepository {
 		const records = await table.findMany({
 			where: {
 				isNotificationSent: false,
+				// Only get records that being inserted today
+				createdAt: {
+					gte: new Date(new Date().setHours(0, 0, 0, 0)),
+				},
 			},
 			skip: offset,
 			take: limit,
