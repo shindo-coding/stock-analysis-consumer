@@ -1,13 +1,14 @@
-import { Controller, Get, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
-import { StockRepository } from 'src/data/stock/stock.repository';
-import { FollowInvestorService } from './follow-investor.service';
-import { RabbitMqService } from 'src/infra/rabbitmq/rabbitmq.service';
+import { Body, Controller, Get, Logger, Post } from "@nestjs/common";
+import { Cron } from "@nestjs/schedule";
+import { StockRepository } from "src/data/stock/stock.repository";
+import { FollowInvestorService } from "./follow-investor.service";
+import { RabbitMqService } from "src/infra/rabbitmq/rabbitmq.service";
+import { Investor } from "src/data/stock/types";
 
-@Controller('follow-investor')
+@Controller("follow-investor")
 export class FollowInvestorController {
 	logger: Logger = new Logger(FollowInvestorController.name);
-	private taskStatus: 'not-started' | 'running' | 'finished' = 'not-started';
+	private taskStatus: "not-started" | "running" | "finished" = "not-started";
 
 	constructor(
 		private readonly stockRepository: StockRepository,
@@ -15,42 +16,34 @@ export class FollowInvestorController {
 		private readonly rabbitMqService: RabbitMqService,
 	) {}
 
-	@Cron('0 5,12,23 * * *') // Run at 5:00, 12:00, 23:00 every day
+	@Cron("0 5,12,23 * * *") // Run at 5:00, 12:00, 23:00 every day
 	async process() {
-		if (this.taskStatus === 'running') {
-			this.logger.verbose('Ticker suggestions job is running');
+		if (this.taskStatus === "running") {
+			this.logger.verbose("Ticker suggestions job is running");
 			return;
 		}
-		this.taskStatus = 'running';
-		this.logger.verbose('Start getting ticker suggestions from good investors');
 		await this.getTickerSuggestions();
-		await this.rabbitMqService.publishMessage({
-			message: { message: 'Ticker suggestions job is finished' },
-			routingKey: 'stock-analysis.job.finished',
-		});
-		this.taskStatus = 'finished';
 	}
 
-	@Get('debug')
-	async debug() {
-		if (this.taskStatus === 'running') {
-			return {
-				message: 'Ticker suggestions job is running',
-			};
+	@Get("trigger")
+	async trigger() {
+		if (this.taskStatus === "running") {
+			this.logger.verbose("Ticker suggestions job is running");
+			return;
 		}
 		this.getTickerSuggestions();
-		return {
-			message: 'Ticker suggestions job is running',
-		};
 	}
 
 	@Get()
 	async getTickerSuggestions() {
-		const userIds = [
-			'F66E6BCA-E510-4E25-8AC3-911FDA769B8B', // Tuấn GVIN
-			'b2929b48-1710-42c2-ad15-a37cb80adce9', // Panda
-			'0104db64-8e7d-400a-83f9-e32b93ba3c15', // Minh
-		];
+		this.taskStatus = "running";
+		this.logger.verbose("Start getting ticker suggestions from good investors");
+		const investors = await this.stockRepository.getInvestors();
+		if (investors.length === 0) {
+			return;
+		}
+
+		const userIds = investors.map((investor) => investor.userId);
 
 		const [tickerSuggestionsFromHomepage, tickerSuggestionsFromPostComment] =
 			await Promise.all([
@@ -70,6 +63,18 @@ export class FollowInvestorController {
 			};
 			await this.stockRepository.insertTickerSuggestion(record);
 		}
+
+		await this.rabbitMqService.publishMessage({
+			message: { message: "Ticker suggestions job is finished" },
+			routingKey: "stock-analysis.job.finished",
+		});
+
+		this.taskStatus = "finished";
 		return suggestions;
+	}
+
+	@Post("investor")
+	async addInvestor(@Body() { investors }: { investors: Investor[] }) {
+		return this.stockRepository.insertInvestor(investors);
 	}
 }

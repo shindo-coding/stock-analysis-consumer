@@ -301,3 +301,8 @@ export interface PostCommentTickerSuggestion {
   postId: string;
   userId: string;
 }
+
+export interface Investor {
+  userId: string;
+  userName: string;
+}

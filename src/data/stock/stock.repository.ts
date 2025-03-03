@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/infra/prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { PrismaService } from "src/infra/prisma/prisma.service";
 import {
 	AllTableName,
+	Investor,
 	MarketStock,
 	PostCommentTickerSuggestion,
 	StockMarketTableName,
@@ -9,17 +10,17 @@ import {
 	StockWatchlistNotification,
 	WatchlistNotification,
 	WatchlistTableName,
-} from './types';
+} from "./types";
 import {
 	HistoricalData,
 	Prisma,
 	PrismaClient,
 	StockFilter,
-} from '@prisma/client';
-import { pick } from 'src/util/object';
-import { logMessage } from 'src/infra/logging/custom.logger';
+} from "@prisma/client";
+import { pick } from "src/util/object";
+import { logMessage } from "src/infra/logging/custom.logger";
 
-type DuplicateStrategy = 'skip' | 'update' | 'error' | 'merge';
+type DuplicateStrategy = "skip" | "update" | "error" | "merge";
 
 interface BulkInsertOptions<T> {
 	batchSize?: number;
@@ -47,10 +48,10 @@ export class StockRepository {
 			});
 			return result;
 		} catch (error) {
-			if (error.code === 'P2002') {
-				throw new Error('Stock ticker name is already exists');
+			if (error.code === "P2002") {
+				throw new Error("Stock ticker name is already exists");
 			} else {
-				console.error('error');
+				console.error("error");
 			}
 		}
 	}
@@ -62,7 +63,7 @@ export class StockRepository {
 			});
 
 			if (!row) {
-				throw new Error('Stock not found');
+				throw new Error("Stock not found");
 			}
 			delete payload.code;
 			const result = await this.prisma.stockWatchlist.update({
@@ -119,7 +120,7 @@ export class StockRepository {
 	) {
 		const {
 			batchSize = 1000,
-			duplicateStrategy = 'skip',
+			duplicateStrategy = "skip",
 			uniqueFields = [],
 			updateFields = [],
 		} = options;
@@ -148,7 +149,7 @@ export class StockRepository {
 					const table = tx[tableName];
 
 					switch (duplicateStrategy) {
-						case 'skip':
+						case "skip":
 							const skipResult = await table.createMany({
 								data: chunk,
 								skipDuplicates: true,
@@ -157,7 +158,7 @@ export class StockRepository {
 							results.skipped += chunk.length - skipResult.count;
 							break;
 
-						case 'update':
+						case "update":
 							for (const record of chunk) {
 								const whereClause = uniqueFields.reduce(
 									(acc, field) => ({
@@ -184,7 +185,7 @@ export class StockRepository {
 							}
 							break;
 
-						case 'merge':
+						case "merge":
 							for (const record of chunk) {
 								const whereClause = uniqueFields.reduce(
 									(acc, field) => ({
@@ -219,7 +220,7 @@ export class StockRepository {
 							}
 							break;
 
-						case 'error':
+						case "error":
 							try {
 								const result = await table.createMany({
 									data: chunk,
@@ -228,7 +229,7 @@ export class StockRepository {
 								results.inserted += result.count;
 							} catch (error) {
 								if (error instanceof Prisma.PrismaClientKnownRequestError) {
-									if (error.code === 'P2002') {
+									if (error.code === "P2002") {
 										throw new Error(
 											`Duplicate records found in chunk ${index + 1}`,
 										);
@@ -252,7 +253,7 @@ export class StockRepository {
 				...results,
 			};
 		} catch (error) {
-			console.error('Operation failed:', error);
+			console.error("Operation failed:", error);
 			throw error;
 		}
 	}
@@ -270,7 +271,7 @@ export class StockRepository {
 				skip: cursor ? 1 : 0,
 				cursor: cursor ? { id: cursor } : undefined,
 				orderBy: {
-					id: 'asc',
+					id: "asc",
 				},
 			});
 
@@ -299,10 +300,10 @@ export class StockRepository {
 			});
 			return result;
 		} catch (error) {
-			if (error.code === 'P2002') {
-				throw new Error('Stock ticker name is already exists');
+			if (error.code === "P2002") {
+				throw new Error("Stock ticker name is already exists");
 			} else {
-				console.error('error', error);
+				console.error("error", error);
 			}
 		}
 	}
@@ -319,7 +320,7 @@ export class StockRepository {
 				skip: cursor ? 1 : 0,
 				cursor: cursor ? { id: cursor } : undefined,
 				orderBy: {
-					id: 'asc',
+					id: "asc",
 				},
 			});
 
@@ -339,7 +340,7 @@ export class StockRepository {
 			await this.prisma.$executeRawUnsafe(`TRUNCATE TABLE ${tableName}`);
 			return true;
 		} catch (error) {
-			console.error('Error truncating table:', error);
+			console.error("Error truncating table:", error);
 			return false;
 		}
 	}
@@ -382,7 +383,7 @@ export class StockRepository {
 				},
 			});
 		} catch (error) {
-			logMessage('error', { message: error.message });
+			logMessage("error", { message: error.message });
 		}
 	}
 
@@ -406,8 +407,8 @@ export class StockRepository {
 				},
 			});
 		} catch (err) {
-			logMessage('error', {
-				message: 'Error getHistoricalDataByTicker',
+			logMessage("error", {
+				message: "Error getHistoricalDataByTicker",
 				error: err,
 			});
 		}
@@ -419,12 +420,12 @@ export class StockRepository {
 				data,
 			});
 		} catch (error) {
-			logMessage('error', { message: error.message });
+			logMessage("error", { message: error.message });
 		}
 	}
 
 	async checkHealth(): Promise<boolean> {
-		const affectedRows = await this.prisma.$executeRawUnsafe('SELECT 1');
+		const affectedRows = await this.prisma.$executeRawUnsafe("SELECT 1");
 		if (affectedRows != 0) {
 			return false;
 		}
@@ -466,7 +467,7 @@ export class StockRepository {
 			});
 			return result;
 		} catch (err) {
-			logMessage('error', { message: `insertTickerSuggestion: ${err}` });
+			logMessage("error", { message: `insertTickerSuggestion: ${err}` });
 		}
 	}
 
@@ -477,13 +478,36 @@ export class StockRepository {
 					isNotificationSent: false,
 				},
 			});
-			return result.map(item => ({
+			return result.map((item) => ({
 				ticker: item.code,
 				userId: item.userId,
 				postId: item.postId,
 			}));
 		} catch (err) {
-			logMessage('error', { message: `getTickerSuggestions: ${err}` });
+			logMessage("error", { message: `getTickerSuggestions: ${err}` });
+		}
+	}
+
+	async getInvestors(): Promise<Investor[]> {
+		try {
+			const rows = await this.prisma.investor.findMany();
+			return rows.map((row) => ({
+				userId: row.userId,
+				userName: row.userName,
+			}));
+		} catch (err) {
+			logMessage("error", { message: `[Error] getInvestors: ${err}` });
+		}
+	}
+
+	async insertInvestor(investors: Investor[]) {
+		try {
+			const result = await this.prisma.investor.createMany({
+				data: investors,
+			});
+			return result;
+		} catch (err) {
+			logMessage("error", { message: `[Error] insertInvestor: ${err}` });
 		}
 	}
 }

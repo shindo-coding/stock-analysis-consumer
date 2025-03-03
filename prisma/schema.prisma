@@ -152,6 +152,13 @@ model DatabricksHistoricalData {
   riskLevel String
 }
 
+model Investor {
+  id Int @id @default(autoincrement())
+  userId String @unique
+  userName String
+  createdAt  DateTime   @default(now())
+}
+
 model TickerSuggestion {
   id Int @id @default(autoincrement())
   code String @unique
