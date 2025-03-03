@@ -151,7 +151,6 @@ model DatabricksHistoricalData {
   reasons String?
   riskLevel String
 }
-
 model Investor {
   id Int @id @default(autoincrement())
   userId String @unique
