@@ -452,8 +452,6 @@ export class StockRepository {
 			const result = await this.prisma.tickerSuggestion.upsert({
 				where: {
 					code: ticker.toUpperCase(),
-					postId,
-					userId,
 				},
 				create: {
 					code: ticker.toUpperCase(),
