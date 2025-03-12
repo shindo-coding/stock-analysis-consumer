@@ -1,5 +1,5 @@
-import { Injectable } from "@nestjs/common";
-import { PrismaService } from "src/infra/prisma/prisma.service";
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/infra/prisma/prisma.service';
 import {
 	AllTableName,
 	Investor,
@@ -7,20 +7,18 @@ import {
 	PostCommentTickerSuggestion,
 	StockMarketTableName,
 	StockWatchlist,
-	StockWatchlistNotification,
 	WatchlistNotification,
 	WatchlistTableName,
-} from "./types";
+} from './types';
+import { pick } from 'src/util/object';
+import { logMessage } from 'src/infra/logging/custom.logger';
 import {
 	HistoricalData,
-	Prisma,
 	PrismaClient,
 	StockFilter,
-} from "@prisma/client";
-import { pick } from "src/util/object";
-import { logMessage } from "src/infra/logging/custom.logger";
+} from '@shindo-coding/typed-prisma-package';
 
-type DuplicateStrategy = "skip" | "update" | "error" | "merge";
+type DuplicateStrategy = 'skip' | 'update' | 'error' | 'merge';
 
 interface BulkInsertOptions<T> {
 	batchSize?: number;
@@ -48,69 +46,16 @@ export class StockRepository {
 			});
 			return result;
 		} catch (error) {
-			if (error.code === "P2002") {
-				throw new Error("Stock ticker name is already exists");
+			if (error.code === 'P2002') {
+				throw new Error('Stock ticker name is already exists');
 			} else {
-				console.error("error");
+				console.error('error');
 			}
-		}
-	}
-
-	async updateStockWatchlist(payload: Partial<StockWatchlist>) {
-		try {
-			const row = await this.prisma.stockWatchlist.findUnique({
-				where: { code: payload.code.toUpperCase() },
-			});
-
-			if (!row) {
-				throw new Error("Stock not found");
-			}
-			delete payload.code;
-			const result = await this.prisma.stockWatchlist.update({
-				data: payload,
-				where: {
-					id: row.id,
-				},
-			});
-			return result;
-		} catch (error) {
-			console.error(error);
 		}
 	}
 
 	async getStockWatchlist(): Promise<StockWatchlist[]> {
 		return this.prisma.stockWatchlist.findMany();
-	}
-
-	async getStockWatchlistNotification(
-		code: string,
-	): Promise<StockWatchlistNotification> {
-		return this.prisma.watchlistNotification.findUnique({
-			where: {
-				code: code.toUpperCase(),
-			},
-		});
-	}
-
-	async addStockWatchlistNotification(code: string) {
-		try {
-			const result = await this.prisma.watchlistNotification.upsert({
-				where: {
-					code: code.toUpperCase(),
-				},
-				create: {
-					code: code.toUpperCase(),
-					isSent: true,
-				},
-				update: {
-					isSent: true,
-					createdAt: new Date(),
-				},
-			});
-			return result;
-		} catch (error) {
-			console.error(error);
-		}
 	}
 
 	async bulkInsert<T>(
@@ -120,7 +65,7 @@ export class StockRepository {
 	) {
 		const {
 			batchSize = 1000,
-			duplicateStrategy = "skip",
+			duplicateStrategy = 'skip',
 			uniqueFields = [],
 			updateFields = [],
 		} = options;
@@ -149,7 +94,7 @@ export class StockRepository {
 					const table = tx[tableName];
 
 					switch (duplicateStrategy) {
-						case "skip":
+						case 'skip':
 							const skipResult = await table.createMany({
 								data: chunk,
 								skipDuplicates: true,
@@ -158,7 +103,7 @@ export class StockRepository {
 							results.skipped += chunk.length - skipResult.count;
 							break;
 
-						case "update":
+						case 'update':
 							for (const record of chunk) {
 								const whereClause = uniqueFields.reduce(
 									(acc, field) => ({
@@ -185,7 +130,7 @@ export class StockRepository {
 							}
 							break;
 
-						case "merge":
+						case 'merge':
 							for (const record of chunk) {
 								const whereClause = uniqueFields.reduce(
 									(acc, field) => ({
@@ -220,7 +165,7 @@ export class StockRepository {
 							}
 							break;
 
-						case "error":
+						case 'error':
 							try {
 								const result = await table.createMany({
 									data: chunk,
@@ -228,12 +173,10 @@ export class StockRepository {
 								});
 								results.inserted += result.count;
 							} catch (error) {
-								if (error instanceof Prisma.PrismaClientKnownRequestError) {
-									if (error.code === "P2002") {
-										throw new Error(
-											`Duplicate records found in chunk ${index + 1}`,
-										);
-									}
+								if (error.code === 'P2002') {
+									throw new Error(
+										`Duplicate records found in chunk ${index + 1}`,
+									);
 								}
 								throw error;
 							}
@@ -253,7 +196,7 @@ export class StockRepository {
 				...results,
 			};
 		} catch (error) {
-			console.error("Operation failed:", error);
+			console.error('Operation failed:', error);
 			throw error;
 		}
 	}
@@ -271,7 +214,7 @@ export class StockRepository {
 				skip: cursor ? 1 : 0,
 				cursor: cursor ? { id: cursor } : undefined,
 				orderBy: {
-					id: "asc",
+					id: 'asc',
 				},
 			});
 
@@ -300,10 +243,10 @@ export class StockRepository {
 			});
 			return result;
 		} catch (error) {
-			if (error.code === "P2002") {
-				throw new Error("Stock ticker name is already exists");
+			if (error.code === 'P2002') {
+				throw new Error('Stock ticker name is already exists');
 			} else {
-				console.error("error", error);
+				console.error('error', error);
 			}
 		}
 	}
@@ -320,7 +263,7 @@ export class StockRepository {
 				skip: cursor ? 1 : 0,
 				cursor: cursor ? { id: cursor } : undefined,
 				orderBy: {
-					id: "asc",
+					id: 'asc',
 				},
 			});
 
@@ -340,7 +283,7 @@ export class StockRepository {
 			await this.prisma.$executeRawUnsafe(`TRUNCATE TABLE ${tableName}`);
 			return true;
 		} catch (error) {
-			console.error("Error truncating table:", error);
+			console.error('Error truncating table:', error);
 			return false;
 		}
 	}
@@ -383,7 +326,7 @@ export class StockRepository {
 				},
 			});
 		} catch (error) {
-			logMessage("error", { message: error.message });
+			logMessage('error', { message: error.message });
 		}
 	}
 
@@ -400,15 +343,11 @@ export class StockRepository {
 			return this.prisma.historicalData.findMany({
 				where: {
 					symbol: ticker.toUpperCase(),
-					date: {
-						gte: startDate,
-						lte: endDate,
-					},
 				},
 			});
 		} catch (err) {
-			logMessage("error", {
-				message: "Error getHistoricalDataByTicker",
+			logMessage('error', {
+				message: 'Error getHistoricalDataByTicker',
 				error: err,
 			});
 		}
@@ -420,12 +359,12 @@ export class StockRepository {
 				data,
 			});
 		} catch (error) {
-			logMessage("error", { message: error.message });
+			logMessage('error', { message: error.message });
 		}
 	}
 
 	async checkHealth(): Promise<boolean> {
-		const affectedRows = await this.prisma.$executeRawUnsafe("SELECT 1");
+		const affectedRows = await this.prisma.$executeRawUnsafe('SELECT 1');
 		if (affectedRows != 0) {
 			return false;
 		}
@@ -449,23 +388,16 @@ export class StockRepository {
 		postId,
 	}: { ticker: string; userId: string; postId: string }) {
 		try {
-			const result = await this.prisma.tickerSuggestion.upsert({
-				where: {
-					code: ticker.toUpperCase(),
-				},
-				create: {
+			const result = await this.prisma.tickerSuggestion.create({
+				data: {
 					code: ticker.toUpperCase(),
 					userId,
 					postId,
 				},
-				update: {
-					postId,
-					createdAt: new Date(),
-				},
 			});
 			return result;
 		} catch (err) {
-			logMessage("error", { message: `insertTickerSuggestion: ${err}` });
+			logMessage('error', { message: `insertTickerSuggestion: ${err}` });
 		}
 	}
 
@@ -482,7 +414,7 @@ export class StockRepository {
 				postId: item.postId,
 			}));
 		} catch (err) {
-			logMessage("error", { message: `getTickerSuggestions: ${err}` });
+			logMessage('error', { message: `getTickerSuggestions: ${err}` });
 		}
 	}
 
@@ -494,7 +426,7 @@ export class StockRepository {
 				userName: row.userName,
 			}));
 		} catch (err) {
-			logMessage("error", { message: `[Error] getInvestors: ${err}` });
+			logMessage('error', { message: `[Error] getInvestors: ${err}` });
 		}
 	}
 
@@ -505,7 +437,7 @@ export class StockRepository {
 			});
 			return result;
 		} catch (err) {
-			logMessage("error", { message: `[Error] insertInvestor: ${err}` });
+			logMessage('error', { message: `[Error] insertInvestor: ${err}` });
 		}
 	}
 }

@@ -3,17 +3,28 @@ FROM node:20.6-alpine AS build
 
 ENV TZ="Asia/Ho_Chi_Minh"
 
+# Add authentication for GitHub packages
+ARG NODE_AUTH_TOKEN
+ENV NODE_AUTH_TOKEN=$NODE_AUTH_TOKEN
+
 WORKDIR /app
+
+# Create .npmrc with authentication
+RUN echo "@shindo-coding:registry=https://npm.pkg.github.com/" > .npmrc && \
+    echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> .npmrc
 
 COPY package*.json ./
 RUN npm ci
+
 COPY . .
 
 # Install the Nest CLI globally
 RUN npm install -g @nestjs/cli
-RUN npx prisma generate
 
 RUN npm run build
+
+# Clean up sensitive data
+RUN rm -f .npmrc
 
 # Production stage
 FROM node:20.6-alpine
@@ -22,19 +33,32 @@ ENV NODE_ENV=production
 ENV EXPOSE_PORT=80
 ENV TZ="Asia/Ho_Chi_Minh"
 
+# Add authentication for GitHub packages
+ARG NODE_AUTH_TOKEN
+ENV NODE_AUTH_TOKEN=$NODE_AUTH_TOKEN
+
 WORKDIR /app
 
-RUN apk add --no-cache tzdata \
-    && addgroup -g 1001 -S nodejs \
-    && adduser -S nodejs -u 1001 \
-    && cp /usr/share/zoneinfo/$TZ /etc/localtime \
-    && echo $TZ > /etc/timezone
+RUN apk add --no-cache tzdata
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nodejs -u 1001
+RUN cp /usr/share/zoneinfo/$TZ /etc/localtime
+RUN echo $TZ > /etc/timezone
+
+# Create .npmrc with authentication
+RUN echo "@shindo-coding:registry=https://npm.pkg.github.com/" > .npmrc && \
+    echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> .npmrc
 
 COPY --from=build /app/package*.json ./
-RUN npm ci --only=production
+RUN npm ci --only=production && \
+    rm -f .npmrc
+
+# Create logs directory and set permissions
+RUN mkdir -p /app/logs && \
+    chown -R nodejs:nodejs /app/logs
 
 COPY --chown=nodejs:nodejs --from=build /app/node_modules/.prisma/client  ./node_modules/.prisma/client
-COPY --chown=nodejs:nodejs --from=build /app/prisma /app/prisma
+# COPY --chown=nodejs:nodejs --from=build /app/prisma /app/prisma
 COPY --chown=nodejs:nodejs --from=build /app/dist ./dist
 
 USER nodejs

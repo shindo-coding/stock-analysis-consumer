@@ -4,7 +4,7 @@ import { RabbitMqOptions } from './rabbitmq.option';
 import { RabbitMqService } from './rabbitmq.service';
 
 @Module({
-  imports: [RabbitMQModule.forRoot(RabbitMQModule, RabbitMqOptions)],
+  imports: [RabbitMQModule.forRoot(RabbitMqOptions)],
   providers: [RabbitMqService],
   exports: [RabbitMqService],
 })

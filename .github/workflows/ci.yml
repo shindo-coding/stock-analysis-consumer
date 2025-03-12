@@ -45,10 +45,16 @@ jobs:
       PRICE_PUSHOVER_TOKEN: ${{ secrets.PRICE_PUSHOVER_TOKEN }}
       GOOD_INVESTOR_PUSHOVER_TOKEN: ${{ secrets.GOOD_INVESTOR_PUSHOVER_TOKEN }}
       RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
+      NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
     steps:
     - name: Check out repository code
       uses: actions/checkout@v4
+
+    - name: Create .npmrc file
+      run: |
+        echo "@shindo-coding:registry=https://npm.pkg.github.com" > .npmrc
+        echo "//npm.pkg.github.com/:_authToken=${{ secrets.NODE_AUTH_TOKEN }}" >> .npmrc
 
     - name: Log in to Docker Hub
       uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
@@ -58,5 +64,5 @@ jobs:
 
     - name: Build and push Docker image
       run: |
-        docker build -t $CI_REGISTRY_IMAGE:$DOCKER_TAG .
+        docker build --build-arg NODE_AUTH_TOKEN=${{ secrets.NODE_AUTH_TOKEN }} -t $CI_REGISTRY_IMAGE:$DOCKER_TAG .
         docker push $CI_REGISTRY_IMAGE:$DOCKER_TAG
