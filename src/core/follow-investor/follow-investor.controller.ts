@@ -16,7 +16,7 @@ export class FollowInvestorController {
 		private readonly rabbitMqService: RabbitMqService,
 	) {}
 
-	@Cron("0 5,12,23 * * *") // Run at 5:00, 12:00, 23:00 every day
+	// @Cron("0 5,12,23 * * *") // Run at 5:00, 12:00, 23:00 every day
 	async process() {
 		if (this.taskStatus === "running") {
 			this.logger.verbose("Ticker suggestions job is running");
