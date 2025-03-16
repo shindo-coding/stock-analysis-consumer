@@ -1,119 +1,247 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
-import { PostCommentTickerSuggestion, UserPost } from './types';
-import { removeDuplicates } from 'src/util/array';
+import {
+	PostCommentTickerSuggestion,
+	TickerPost,
+	UserPost,
+	UserPostReply,
+} from './types';
+import { chunkArray, removeDuplicates } from 'src/util/array';
+import { sub } from 'date-fns';
+import { retryRequest } from 'src/util/request';
+import { sleep } from 'src/util/time';
 
 @Injectable()
 export class FireAntService {
-	#baseUrl = 'https://restv2.fireant.vn';
-	#jwtToken =
-		'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6IkdYdExONzViZlZQakdvNERWdjV4QkRITHpnSSIsImtpZCI6IkdYdExONzViZlZQakdvNERWdjV4QkRITHpnSSJ9.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmZpcmVhbnQudm4iLCJhdWQiOiJodHRwczovL2FjY291bnRzLmZpcmVhbnQudm4vcmVzb3VyY2VzIiwiZXhwIjoyMDMzNDU3MTgxLCJuYmYiOjE3MzM0NTcxODEsImNsaWVudF9pZCI6ImZpcmVhbnQud2ViIiwic2NvcGUiOlsib3BlbmlkIiwicHJvZmlsZSIsInJvbGVzIiwiZW1haWwiLCJhY2NvdW50cy1yZWFkIiwiYWNjb3VudHMtd3JpdGUiLCJvcmRlcnMtcmVhZCIsIm9yZGVycy13cml0ZSIsImNvbXBhbmllcy1yZWFkIiwiaW5kaXZpZHVhbHMtcmVhZCIsImZpbmFuY2UtcmVhZCIsInBvc3RzLXdyaXRlIiwicG9zdHMtcmVhZCIsInN5bWJvbHMtcmVhZCIsInVzZXItZGF0YS1yZWFkIiwidXNlci1kYXRhLXdyaXRlIiwidXNlcnMtcmVhZCIsInNlYXJjaCIsImFjYWRlbXktcmVhZCIsImFjYWRlbXktd3JpdGUiLCJibG9nLXJlYWQiLCJpbnZlc3RvcGVkaWEtcmVhZCJdLCJzdWIiOiJiNDQzZTBiZS1kYTI2LTQ4ZDMtOTRlYi03Zjg1YjcyMDgwOTMiLCJhdXRoX3RpbWUiOjE3MzM0NTcxODAsImlkcCI6Ikdvb2dsZSIsIm5hbWUiOiJ0aGFpc29ubGFtc3BAZ21haWwuY29tIiwic2VjdXJpdHlfc3RhbXAiOiJjYTgzYTAyYS1hODAxLTRjZGMtYWQxMS1jNjM1ZDI4ZDBhNWYiLCJqdGkiOiI1ZWYwMmRhZjAwZjViM2E2MjVkNzZhZDdiMWY1ZjBhZCIsImFtciI6WyJleHRlcm5hbCJdfQ.nPDM1NKaj4tgKlqxTwPSSlio52QzI61UgzV6vumWI_eoQqZhfFQc6VrhhUuHRLtYITIXTY7ti2GNYm_dzHJVh8eY8FN4a7i5LN8CEs4XqY8doIXToNkEl2bgjaKu4R3kVKnbrIzRPCaJHeJDeyS7_xX0J5c2AyiYI1WNGhVvHz0nrPh7onDlRiQtYZ0jLP4A-6irR7HnUKTSdH7qWQC8Xe9ECOTsmL5JbtXmNena5CletoR1e5qOrCN6XWOtT8DQqfN0OHfh_SDr7cciV-k-r1fLlEkf6DwG5U-ytZqrSXJJyww-_s7U0iPj3IDne1yPQIkAo7OqilLgxgPrezhBJQ';
-	#logger = new Logger(FireAntService.name);
+	baseUrl = 'https://restv2.fireant.vn';
+	jwtToken =
+		'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6IkdYdExONzViZlZQakdvNERWdjV4QkRITHpnSSIsImtpZCI6IkdYdExONzViZlZQakdvNERWdjV4QkRITHpnSSJ9.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmZpcmVhbnQudm4iLCJhdWQiOiJodHRwczovL2FjY291bnRzLmZpcmVhbnQudm4vcmVzb3VyY2VzIiwiZXhwIjoxODg5NjIyNTMwLCJuYmYiOjE1ODk2MjI1MzAsImNsaWVudF9pZCI6ImZpcmVhbnQudHJhZGVzdGF0aW9uIiwic2NvcGUiOlsiYWNhZGVteS1yZWFkIiwiYWNhZGVteS13cml0ZSIsImFjY291bnRzLXJlYWQiLCJhY2NvdW50cy13cml0ZSIsImJsb2ctcmVhZCIsImNvbXBhbmllcy1yZWFkIiwiZmluYW5jZS1yZWFkIiwiaW5kaXZpZHVhbHMtcmVhZCIsImludmVzdG9wZWRpYS1yZWFkIiwib3JkZXJzLXJlYWQiLCJvcmRlcnMtd3JpdGUiLCJwb3N0cy1yZWFkIiwicG9zdHMtd3JpdGUiLCJzZWFyY2giLCJzeW1ib2xzLXJlYWQiLCJ1c2VyLWRhdGEtcmVhZCIsInVzZXItZGF0YS13cml0ZSIsInVzZXJzLXJlYWQiXSwianRpIjoiMjYxYTZhYWQ2MTQ5Njk1ZmJiYzcwODM5MjM0Njc1NWQifQ.dA5-HVzWv-BRfEiAd24uNBiBxASO-PAyWeWESovZm_hj4aXMAZA1-bWNZeXt88dqogo18AwpDQ-h6gefLPdZSFrG5umC1dVWaeYvUnGm62g4XS29fj6p01dhKNNqrsu5KrhnhdnKYVv9VdmbmqDfWR8wDgglk5cJFqalzq6dJWJInFQEPmUs9BW_Zs8tQDn-i5r4tYq2U8vCdqptXoM7YgPllXaPVDeccC9QNu2Xlp9WUvoROzoQXg25lFub1IYkTrM66gJ6t9fJRZToewCt495WNEOQFa_rwLCZ1QwzvL0iYkONHS_jZ0BOhBCdW9dWSawD6iF1SIQaFROvMDH1rg';
+	logger = new Logger(FireAntService.name);
+	client: HttpService;
 
-	constructor(private readonly httpService: HttpService) {}
+	constructor(private readonly httpService: HttpService) {
+		this.client = httpService;
+		this.client.axiosRef.defaults.timeout = 300000;
+		this.client.axiosRef.defaults.headers.common['Content-Type'] =
+			'application/json';
+		this.client.axiosRef.defaults.headers.common['User-Agent'] =
+			'PostmanRuntime/7.43.0';
+
+		this.client.axiosRef.defaults.headers.common['authorization'] =
+			'Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6IkdYdExONzViZlZQakdvNERWdjV4QkRITHpnSSIsImtpZCI6IkdYdExONzViZlZQakdvNERWdjV4QkRITHpnSSJ9.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmZpcmVhbnQudm4iLCJhdWQiOiJodHRwczovL2FjY291bnRzLmZpcmVhbnQudm4vcmVzb3VyY2VzIiwiZXhwIjoxODg5NjIyNTMwLCJuYmYiOjE1ODk2MjI1MzAsImNsaWVudF9pZCI6ImZpcmVhbnQudHJhZGVzdGF0aW9uIiwic2NvcGUiOlsiYWNhZGVteS1yZWFkIiwiYWNhZGVteS13cml0ZSIsImFjY291bnRzLXJlYWQiLCJhY2NvdW50cy13cml0ZSIsImJsb2ctcmVhZCIsImNvbXBhbmllcy1yZWFkIiwiZmluYW5jZS1yZWFkIiwiaW5kaXZpZHVhbHMtcmVhZCIsImludmVzdG9wZWRpYS1yZWFkIiwib3JkZXJzLXJlYWQiLCJvcmRlcnMtd3JpdGUiLCJwb3N0cy1yZWFkIiwicG9zdHMtd3JpdGUiLCJzZWFyY2giLCJzeW1ib2xzLXJlYWQiLCJ1c2VyLWRhdGEtcmVhZCIsInVzZXItZGF0YS13cml0ZSIsInVzZXJzLXJlYWQiXSwianRpIjoiMjYxYTZhYWQ2MTQ5Njk1ZmJiYzcwODM5MjM0Njc1NWQifQ.dA5-HVzWv-BRfEiAd24uNBiBxASO-PAyWeWESovZm_hj4aXMAZA1-bWNZeXt88dqogo18AwpDQ-h6gefLPdZSFrG5umC1dVWaeYvUnGm62g4XS29fj6p01dhKNNqrsu5KrhnhdnKYVv9VdmbmqDfWR8wDgglk5cJFqalzq6dJWJInFQEPmUs9BW_Zs8tQDn-i5r4tYq2U8vCdqptXoM7YgPllXaPVDeccC9QNu2Xlp9WUvoROzoQXg25lFub1IYkTrM66gJ6t9fJRZToewCt495WNEOQFa_rwLCZ1QwzvL0iYkONHS_jZ0BOhBCdW9dWSawD6iF1SIQaFROvMDH1rg';
+	}
 
 	async getTickerSuggestionsByUser(
 		userId: string,
 	): Promise<PostCommentTickerSuggestion[]> {
 		const limit = 100;
 		let offset = 0;
-		const URL = `${this.#baseUrl}/posts?userId=${userId}&type=0&offset=${offset}&limit=${limit}`;
+		const URL = `${this.baseUrl}/posts?userId=${userId}&type=0&offset=${offset}&limit=${limit}`;
 
-		try {
-			const res = this.httpService.get(URL, {
-				headers: {
-					Authorization: 'Bearer ' + this.#jwtToken,
-				},
-			});
-			const { data } = await firstValueFrom(res);
-			const allPosts = data as UserPost[];
+		return retryRequest(async () => {
+			try {
+				const { data } = await firstValueFrom(this.client.get(URL));
+				const threeMonthsAgo = sub(new Date(), { months: 3 });
+				const allPosts = (data as UserPost[]).filter((post) => {
+					const postDate = new Date(post.date);
+					return postDate >= threeMonthsAgo;
+				});
+				if (!allPosts || allPosts.length === 0) {
+					return [];
+				}
 
-			let suggestions = allPosts.map((post) => {
-				const tickers = removeDuplicates(
-					post.taggedSymbols
-						.filter((item) => item.symbol.length <= 3)
-						.map((item) => item.symbol),
-				);
+				let suggestions = allPosts.map((post) => {
+					const tickers = removeDuplicates(
+						post.taggedSymbols
+							.filter((item) => item.symbol.length <= 3)
+							.map((item) => item.symbol),
+					);
 
-				return tickers.map((ticker) => ({
-					ticker,
-					userId,
-					postId: String(post.postID),
-				}));
-			});
+					return tickers.map((ticker) => ({
+						ticker,
+						userId,
+						postId: String(post.postID),
+						postType: 'user_homepage',
+					}));
+				});
 
-			return suggestions.flat();
-		} catch (err) {
-			this.#logger.error(err);
-		}
+				return suggestions.flat();
+			} catch (err) {
+				if (err.response.status !== 403) {
+					this.logger.error(
+						'[Error] getTickerSuggestionsByUser ' + err.message,
+						err.stack,
+					);
+					return [];
+				}
+				return [];
+			}
+		});
 	}
 
-	private async getPostIdsByTicker(ticker: string) {
-		// https://restv2.fireant.vn/posts?symbol=SAS&type=1&offset=0&limit=30
+	private async getPostsByTicker(ticker: string): Promise<TickerPost[]> {
+		// https://restv2.fireant.vn/posts?symbol=SAS&type=0&offset=0&limit=30
 		const limit = 100;
 		let offset = 0;
-		const URL = `${this.#baseUrl}/posts?symbol=${ticker.toUpperCase()}&type=0&offset=${offset}&limit=${limit}`;
+		const URL = `${this.baseUrl}/posts?symbol=${ticker.toUpperCase()}&type=0&offset=${offset}&limit=${limit}`;
 
-		try {
-			const res = this.httpService.get(URL, {
-				headers: {
-					Authorization: 'Bearer ' + this.#jwtToken,
-				},
-			});
-			const { data } = await firstValueFrom(res);
-			const allPosts = (data as UserPost[]) || [];
+		return retryRequest(async () => {
+			try {
+				const { data } = await firstValueFrom(this.client.get(URL));
+				const threeMonthsAgo = sub(new Date(), { months: 3 });
+				const allPosts = (data as UserPost[]).filter((post) => {
+					const postDate = new Date(post.date);
+					return postDate >= threeMonthsAgo;
+				});
 
-			return allPosts.map((post) => post.postID);
-		} catch (err) {
-			this.#logger.error(err);
-		}
+				return allPosts.map((post) => ({
+					postId: post.postID,
+					userId: post.user.id,
+					ticker,
+				}));
+			} catch (err) {
+				if (err.status !== 403) {
+					this.logger.error('[Error] getPostsByTicker ' + err.message, {
+						ticker,
+						trace: err.stack,
+					});
+				}
+			}
+		});
 	}
 
 	async getTickerSuggestionsByPostComment(
 		tickers: string[],
 		userIds: string[],
 	): Promise<PostCommentTickerSuggestion[]> {
-		const postCommentTickerSuggestions: PostCommentTickerSuggestion[] = [];
+		// TODO: remove the performance tracking when the optimization is done
+		console.time('getTickerSuggestionsByPostComment - Execution Time');
+		try {
+			const postCommentTickerSuggestions: PostCommentTickerSuggestion[] = [];
 
-		for (const ticker of tickers) {
-			const postIds = await this.getPostIdsByTicker(ticker);
-			const limit = 100;
-			let offset = 0;
+			// Process 10 tickers at a time
+			const tickerChunks = chunkArray(tickers, 10);
+			for (const chunk of tickerChunks) {
+				const postsPromises = chunk.map((ticker) =>
+					this.getPostsByTicker(ticker),
+				);
+				const posts: TickerPost[][] = await Promise.all(postsPromises);
 
-			try {
-				for (const postId of postIds) {
-					const URL = `${this.#baseUrl}/posts/${postId}/replies?offset=${offset}&limit=${limit}`;
-					const res = this.httpService.get(URL, {
-						headers: {
-							Authorization: 'Bearer ' + this.#jwtToken,
-						},
-					});
-					const { data } = await firstValueFrom(res);
-					const allCommentPosts = data as UserPost[];
+				const postRepliesAsyncIterator = this.processPostRepliesFromPosts(
+					posts.flat().filter((post) => !!post),
+				);
+				for await (const posts of postRepliesAsyncIterator) {
+					const userCommentedPosts = this.findMatchingUsers(posts, userIds);
 
-					// Find a reply from user
-					const userCommentedPosts = this.findMatchingUsers(allCommentPosts, userIds);
 					if (userCommentedPosts.length === 0) {
 						continue;
 					}
-					userCommentedPosts.forEach(post => {
+
+					userCommentedPosts.forEach((post) => {
 						postCommentTickerSuggestions.push({
-							ticker,
-							userId: post.user.id,
-							postId: String(postId),
+							ticker: post.ticker,
+							userId: post.userId,
+							postId: String(post.postId),
+							postType: 'user_postcomment',
 						});
 					});
 				}
-			} catch (err) {
-				this.#logger.error(err);
+
+				sleep(1000); // Sleep for 1 second to avoid rate limiting
+			}
+
+			console.timeEnd('getTickerSuggestionsByPostComment - Execution Time');
+			return postCommentTickerSuggestions;
+		} catch (err) {
+			if (err.response.status !== 403) {
+				this.logger.error(
+					'[Error] getTickerSuggestionsByPostComment ' + err.message,
+					err.stack,
+				);
 			}
 		}
-
-		return postCommentTickerSuggestions;
 	}
 
-	private findMatchingUsers(posts: UserPost[], userIds: string[]) {
-		return posts.filter((post) => userIds.includes(post.user.id));
+	private async *processPostRepliesFromPosts(
+		posts: TickerPost[],
+	): AsyncGenerator<UserPostReply[]> {
+		try {
+			const chunks = chunkArray(posts, 100);
+			for (const chunk of chunks) {
+				const postRepliesPromises = chunk
+					.filter((post) => !!post)
+					.map((post) => this.getPostReplies(post));
+				const postRepliesReponse = await Promise.all(postRepliesPromises);
+				const postReplies = postRepliesReponse
+					.flat()
+					.filter((reply) => !!reply);
+				yield postReplies;
+			}
+		} catch (err) {
+			this.logger.error(
+				'[Error] *processPostRepliesFromPosts ' + err.message,
+				err.stack,
+			);
+		}
+	}
+
+	async getPostReplies(post: TickerPost): Promise<UserPostReply[]> {
+		const { postId, ticker } = post || {};
+		if (!postId || !ticker) {
+			console.debug('Invalid post:', post);
+			return [];
+		}
+
+		const limit = 100;
+		let offset = 0;
+
+		const URL = `${this.baseUrl}/posts/${postId}/replies?offset=${offset}&limit=${limit}`;
+
+		return retryRequest(async () => {
+			try {
+				const { data } = await firstValueFrom(this.client.get(URL));
+				const threeMonthsAgo = sub(new Date(), { months: 3 });
+				const allCommentPosts = (data as UserPost[])
+					.filter((post) => {
+						if (
+							!post ||
+							!post.date ||
+							!post.user ||
+							!post.user.id ||
+							!post.postID
+						) {
+							console.log('Invalid post structure:', post);
+							return false; // Filter out invalid entries
+						}
+						const postDate = new Date(post.date);
+						return postDate >= threeMonthsAgo;
+					})
+					.map((post) => ({
+						postId: post.postID,
+						userId: post.user.id,
+						content: post.content || '',
+						date: post.date,
+						ticker,
+					}));
+
+				return allCommentPosts;
+			} catch (err) {
+				if (err.status !== 403) {
+					this.logger.error('[Error] getPostReplies ' + err.message, {
+						postId,
+						trace: err.stack,
+					});
+				}
+			}
+		});
+	}
+
+	private findMatchingUsers(posts: UserPostReply[], userIds: string[]) {
+		try {
+			return posts.filter((post) => userIds.includes(post.userId));
+		} catch (err) {
+			this.logger.error('[Error] findMatchingUsers ' + err.message, err.stack);
+		}
 	}
 }

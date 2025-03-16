@@ -382,22 +382,78 @@ export class StockRepository {
 		return data.map((item) => item.code);
 	}
 
+	async insertTickerSuggestions(suggestions: PostCommentTickerSuggestion[]) {
+		if (suggestions.length === 0) {
+			return;
+		}
+		try {
+			const records = suggestions.map((suggestion) => ({
+				code: suggestion.ticker.toUpperCase(),
+				userId: suggestion.userId,
+				postId: suggestion.postId,
+				postType: suggestion.postType,
+			}));
+			const result = await this.prisma.tickerSuggestion.createMany({
+				data: records,
+			});
+			return result;
+		} catch (err) {
+			logMessage('error', { message: `insertTickerSuggestions: ${err}` });
+		}
+	}
+
 	async insertTickerSuggestion({
 		ticker,
 		userId,
 		postId,
-	}: { ticker: string; userId: string; postId: string }) {
+		postType,
+	}: PostCommentTickerSuggestion) {
 		try {
 			const result = await this.prisma.tickerSuggestion.create({
 				data: {
 					code: ticker.toUpperCase(),
 					userId,
 					postId,
+					postType,
 				},
 			});
 			return result;
 		} catch (err) {
 			logMessage('error', { message: `insertTickerSuggestion: ${err}` });
+		}
+	}
+
+	async findTickerSuggestions({
+		userId,
+	}: {
+		userId: string;
+	}): Promise<PostCommentTickerSuggestion[]> {
+		try {
+			const result = await this.#prisma.tickerSuggestion.findMany({
+				include: {
+					investor: true,
+				},
+				where: {
+					isNotificationSent: false,
+					userId,
+				},
+				distinct: ['code'],
+				orderBy: {
+					createdAt: 'desc',
+				},
+			});
+
+			return result.map((item) => ({
+				ticker: item.code,
+				userId: item.userId,
+				userName: item.investor.userName,
+				postId: item.postId,
+				postType: item.postType,
+			}));
+		} catch (err) {
+			logMessage('error', {
+				message: `findTickerSuggestionsByUser: ${err.message}`,
+			});
 		}
 	}
 
@@ -412,6 +468,7 @@ export class StockRepository {
 				ticker: item.code,
 				userId: item.userId,
 				postId: item.postId,
+				postType: item.postType,
 			}));
 		} catch (err) {
 			logMessage('error', { message: `getTickerSuggestions: ${err}` });

@@ -3,7 +3,7 @@ import { BaseService } from '../base-service';
 import { Nack, RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { ConsumeMessage } from 'amqplib';
 import {
-    PostCommentTickerSuggestion,
+	PostCommentTickerSuggestion,
 	WatchlistNotification,
 	WatchlistTableName,
 } from 'src/data/stock/types';
@@ -21,7 +21,11 @@ export class NotifyConsumer extends BaseService {
 	@RabbitSubscribe({
 		exchange: 'events',
 		queue: 'stock-analysis-notification',
-		routingKey: ['stock-analysis.notify', 'stock-analysis.job.finished'],
+		routingKey: [
+			'stock-analysis.notify',
+			'stock-analysis.job.finished',
+			'stock-analysis.job.error',
+		],
 		queueOptions: { durable: true },
 		errorHandler: (err, msg) => {
 			console.error('NotifyConsumer error', err, msg);
@@ -34,6 +38,8 @@ export class NotifyConsumer extends BaseService {
 				return this.handleNotify(msg);
 			case 'stock-analysis.job.finished':
 				return this.handleJobFinished(msg);
+			case 'stock-analysis.job.error':
+				return this.handleJobFailed(msg);
 			default:
 				return;
 		}
@@ -74,28 +80,43 @@ export class NotifyConsumer extends BaseService {
 		}
 	}
 
-	private async handleJobFinished(msg: any) {
-		const tickerSuggestions = await this.stockRepository.getTickerSuggestions();
-		// Create chunks of 7 ticker suggestions
-		const chunkSize = 7;
-		const chunks: Array<PostCommentTickerSuggestion[]> = [];
-		for (let i = 0; i < tickerSuggestions.length; i += chunkSize) {
-			chunks.push(tickerSuggestions.slice(i, i + chunkSize));
-		}
+	private async handleJobFinished(_: any) {
+		const investors = await this.stockRepository.getInvestors();
+		for (const investor of investors) {
+			const tickerSuggestions =
+				await this.stockRepository.findTickerSuggestions({
+					userId: investor.userId,
+				});
+			// Create chunks of 7 ticker suggestions
+			const chunkSize = 7;
+			const chunks: Array<PostCommentTickerSuggestion[]> = [];
+			for (let i = 0; i < tickerSuggestions.length; i += chunkSize) {
+				chunks.push(tickerSuggestions.slice(i, i + chunkSize));
+			}
 
-		for (const chunk of chunks) {
-			const { title, message } = formatTickerSuggestionMessage(chunk);
-			await this.notificationService.send({
-				appName: 'GoodInvestorAnalysis',
-				title,
-				message,
-				html: true,
-			});
-			await this.postProcess(
-				'TickerSuggestion',
-				chunk.map((item) => item.ticker),
-			);
+			for (const chunk of chunks) {
+				const { title, message } = formatTickerSuggestionMessage(chunk);
+				await this.notificationService.send({
+					appName: 'GoodInvestorAnalysis',
+					title,
+					message,
+					html: true,
+				});
+				await this.postProcess(
+					'TickerSuggestion',
+					chunk.map((item) => item.ticker),
+				);
+			}
 		}
+	}
+	private async handleJobFailed(msg: any): Promise<void> {
+		const { message } = msg;
+		await this.notificationService.send({
+			appName: 'GoodInvestorAnalysis',
+			title: 'Ticker suggestions job failed',
+			message,
+			html: true,
+		});
 	}
 
 	private async notify(

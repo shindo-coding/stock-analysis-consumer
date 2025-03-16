@@ -279,6 +279,20 @@ export interface UserPost {
   pendingApproval: boolean
 }
 
+export interface UserPostReply {
+  postId: number;
+  userId: string;
+  content: string;
+  date: string;
+  ticker: string;
+}
+
+export interface TickerPost {
+  postId: number;
+  ticker: string;
+  userId: string
+}
+
 export interface User {
   id: string
   name: string
@@ -299,7 +313,9 @@ export interface TaggedSymbol {
 export interface PostCommentTickerSuggestion {
   ticker: string;
   postId: string;
+  postType: string;
   userId: string;
+  userName?: string;
 }
 
 export interface Investor {
