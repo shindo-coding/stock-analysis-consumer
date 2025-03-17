@@ -9,7 +9,7 @@ COPY package*.json .npmrc ./
 
 # Add authentication for GitHub packages
 ARG NODE_AUTH_TOKEN
-RUN if [ -n "NODE_AUTH_TOKEN" ]; then \
+RUN if [ -n "$NODE_AUTH_TOKEN" ]; then \
     echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> .npmrc \
     echo "@shindo-coding:registry=https://npm.pkg.github.com/" > .npmrc && \
   else \
