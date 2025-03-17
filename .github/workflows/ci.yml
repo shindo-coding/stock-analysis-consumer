@@ -69,5 +69,5 @@ jobs:
 
     - name: Build and push Docker image
       run: |
-        docker build --build-arg NODE_AUTH_TOKEN=${{ secrets.NODE_AUTH_TOKEN }} -t $CI_REGISTRY_IMAGE:$DOCKER_TAG .
+        docker build  -t $CI_REGISTRY_IMAGE:$DOCKER_TAG .
         docker push $CI_REGISTRY_IMAGE:$DOCKER_TAG

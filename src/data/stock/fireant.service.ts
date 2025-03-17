@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
 import {
 	PostCommentTickerSuggestion,
+	TickerHistorical,
 	TickerPost,
 	UserPost,
 	UserPostReply,
@@ -242,6 +243,37 @@ export class FireAntService {
 			return posts.filter((post) => userIds.includes(post.userId));
 		} catch (err) {
 			this.logger.error('[Error] findMatchingUsers ' + err.message, err.stack);
+		}
+	}
+
+	async getHistoricalDataByTimerange({
+		ticker,
+		startDate,
+		endDate,
+		offset = 0,
+		limit = 20,
+	}: {
+		ticker: string;
+		startDate: string;
+		endDate: string;
+		offset?: number;
+		limit?: number;
+	}): Promise<TickerHistorical[]> {
+		try {
+			const code = ticker.toUpperCase();
+			const queryParams = {
+				startDate,
+				endDate,
+				offset: String(offset),
+				limit: String(limit),
+			};
+			const searchParams = new URLSearchParams(queryParams).toString();
+			const URL = `${this.baseUrl}/symbols/${code}/historical-quotes?${searchParams}`;
+			const res = this.client.get(URL);
+			const { data } = await firstValueFrom(res);
+			return data;
+		} catch (err) {
+			this.logger.error(err);
 		}
 	}
 }
