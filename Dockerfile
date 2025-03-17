@@ -3,17 +3,20 @@ FROM node:20.6-alpine AS build
 
 ENV TZ="Asia/Ho_Chi_Minh"
 
-# Add authentication for GitHub packages
-ARG NODE_AUTH_TOKEN
-ENV NODE_AUTH_TOKEN=$NODE_AUTH_TOKEN
-
 WORKDIR /app
 
-# Create .npmrc with authentication
-RUN echo "@shindo-coding:registry=https://npm.pkg.github.com/" > .npmrc && \
-    echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> .npmrc
+COPY package*.json .npmrc ./
 
-COPY package*.json ./
+# Add authentication for GitHub packages
+ARG NODE_AUTH_TOKEN
+RUN if [ -n "NODE_AUTH_TOKEN" ]; then \
+    echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> .npmrc \
+    echo "@shindo-coding:registry=https://npm.pkg.github.com/" > .npmrc && \
+  else \
+    echo "NODE_AUTH_TOKEN is not set"; \
+    exit 1; \
+  fi
+
 RUN npm ci
 
 COPY . .

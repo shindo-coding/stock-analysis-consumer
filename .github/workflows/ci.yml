@@ -45,16 +45,30 @@ jobs:
       PRICE_PUSHOVER_TOKEN: ${{ secrets.PRICE_PUSHOVER_TOKEN }}
       GOOD_INVESTOR_PUSHOVER_TOKEN: ${{ secrets.GOOD_INVESTOR_PUSHOVER_TOKEN }}
       RABBITMQ_URL: ${{ secrets.RABBITMQ_URL }}
-      NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
     steps:
     - name: Check out repository code
       uses: actions/checkout@v4
 
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@shindo-coding'
+
     - name: Create .npmrc file
       run: |
         echo "@shindo-coding:registry=https://npm.pkg.github.com" > .npmrc
         echo "//npm.pkg.github.com/:_authToken=${{ secrets.NODE_AUTH_TOKEN }}" >> .npmrc
+
+    - name: Install dependencies
+      run: npm ci
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+
+    - name: Build
+      run: npm run build
 
     - name: Log in to Docker Hub
       uses: docker/login-action@f4ef78c080cd8ba55a85445d5b36e214a81df20a
@@ -62,7 +76,20 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
+
     - name: Build and push Docker image
-      run: |
-        docker build --build-arg NODE_AUTH_TOKEN=${{ secrets.NODE_AUTH_TOKEN }} -t $CI_REGISTRY_IMAGE:$DOCKER_TAG .
-        docker push $CI_REGISTRY_IMAGE:$DOCKER_TAG
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ghcr.io/${{ github.repository }}:latest
+        build-args: |
+          NODE_AUTH_TOKEN=${{ secrets.NODE_AUTH_TOKEN }}
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+
+    #
+    # - name: Build and push Docker image
+    #   run: |
+    #     docker build --build-arg NODE_AUTH_TOKEN=${{ secrets.NODE_AUTH_TOKEN }} -t $CI_REGISTRY_IMAGE:$DOCKER_TAG .
+    #     docker push $CI_REGISTRY_IMAGE:$DOCKER_TAG
