@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { logMessage } from '../logging/custom.logger';
-import { PrismaClient } from '@shindo-coding/typed-prisma-package';
+import { PrismaClient } from 'shindo-coding-typed-prisma-package';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {

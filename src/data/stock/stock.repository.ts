@@ -16,7 +16,7 @@ import {
 	HistoricalData,
 	PrismaClient,
 	StockFilter,
-} from '@shindo-coding/typed-prisma-package';
+} from 'shindo-coding-typed-prisma-package';
 
 type DuplicateStrategy = 'skip' | 'update' | 'error' | 'merge';
 
