@@ -12,7 +12,7 @@ export class HealthController {
   @Get()
   getInfo() {
     return {
-      service: 'stock-analysis',
+      service: 'stock-analysis-consumer',
       version: '1.0.0',
     };
   }
