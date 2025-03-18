@@ -18,4 +18,13 @@ export class ExportController {
       this.logger.error(error.message, error.stack);
     }
   }
+
+  @Get('tickers')
+  async exportTickers() {
+    try {
+      return this.exportService.getAllTickersCode();
+    } catch (error) {
+      this.logger.error(error.message, error.stack);
+    }
+  }
 }

@@ -513,4 +513,18 @@ export class StockRepository {
 			logMessage('error', { message: `[Error] getAllHistoricalDataByTicker: ${error.message}` });
 		}
 	}
+
+	async getAllTickersCode(): Promise<string[]> {
+		try {
+			const tickers = await this.prisma.historicalData.findMany({
+				select: {
+					symbol: true,
+				},
+				distinct: ['symbol'],
+			});
+			return tickers.map((ticker) => ticker.symbol);
+		} catch (error) {
+			logMessage('error', { message: `[Error] getAllTickersCode: ${error.message}` });
+		}
+	}
 }

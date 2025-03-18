@@ -20,4 +20,12 @@ export class ExportService {
 			this.logger.error(error.message, error.stack);
 		}
 	}
+
+	async getAllTickersCode(): Promise<string[]> {
+	  try {
+	    return await this.stockRepository.getAllTickersCode();
+	  } catch (error) {
+      this.logger.error(error.message, error.stack);
+    }
+	}
 }
