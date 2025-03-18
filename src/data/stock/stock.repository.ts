@@ -497,4 +497,20 @@ export class StockRepository {
 			logMessage('error', { message: `[Error] insertInvestor: ${err}` });
 		}
 	}
+
+	async getAllHistoricalDataByTicker(
+		ticker: string,
+	): Promise<HistoricalData[]> {
+		try {
+			const historicalData =
+				await this.prisma.historicalData.findMany({
+					where: {
+						symbol: ticker,
+					},
+				});
+			return historicalData;
+		} catch (error) {
+			logMessage('error', { message: `[Error] getAllHistoricalDataByTicker: ${error.message}` });
+		}
+	}
 }
