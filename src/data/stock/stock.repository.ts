@@ -17,6 +17,7 @@ import {
 	PrismaClient,
 	StockFilter,
 } from 'shindo-coding-typed-prisma-package';
+import { marketCodeTableNameMap } from 'src/constant/stock-market';
 
 type DuplicateStrategy = 'skip' | 'update' | 'error' | 'merge';
 
@@ -502,29 +503,45 @@ export class StockRepository {
 		ticker: string,
 	): Promise<HistoricalData[]> {
 		try {
-			const historicalData =
-				await this.prisma.historicalData.findMany({
-					where: {
-						symbol: ticker,
-					},
-				});
+			const historicalData = await this.prisma.historicalData.findMany({
+				where: {
+					symbol: ticker,
+				},
+			});
 			return historicalData;
 		} catch (error) {
-			logMessage('error', { message: `[Error] getAllHistoricalDataByTicker: ${error.message}` });
+			logMessage('error', {
+				message: `[Error] getAllHistoricalDataByTicker: ${error.message}`,
+			});
 		}
 	}
 
 	async getAllTickersCode(): Promise<string[]> {
 		try {
-			const tickers = await this.prisma.historicalData.findMany({
+			const upcomMarketCodes = await this.prisma.upcomMarket.findMany({
 				select: {
-					symbol: true,
+					code: true,
 				},
-				distinct: ['symbol'],
+				distinct: ['code'],
 			});
-			return tickers.map((ticker) => ticker.symbol);
+			const hnxMarketCodes = await this.prisma.hNXMarket.findMany({
+				select: {
+					code: true,
+				},
+				distinct: ['code'],
+			});
+			const hsxMarketCodes = await this.prisma.hSXMarket.findMany({
+				select: {
+					code: true,
+				},
+				distinct: ['code'],
+			});
+			const tickers = [...upcomMarketCodes, ...hnxMarketCodes, ...hsxMarketCodes];
+			return tickers.map((ticker) => ticker.code);
 		} catch (error) {
-			logMessage('error', { message: `[Error] getAllTickersCode: ${error.message}` });
+			logMessage('error', {
+				message: `[Error] getAllTickersCode: ${error.message}`,
+			});
 		}
 	}
 }
