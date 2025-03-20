@@ -38,7 +38,9 @@ export class FollowInvestorController {
 async getTickerSuggestions() {
   try {
     this.taskStatus = "running";
-    this.logger.verbose("Start getting ticker suggestions from good investors");
+    this.logger.verbose("Start getting ticker suggestions from good investors", {
+        date: new Date().toISOString(),
+      });
 
     const investors = await this.stockRepository.getInvestors();
     if (investors.length === 0) {
