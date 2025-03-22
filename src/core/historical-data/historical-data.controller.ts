@@ -1,5 +1,6 @@
 import { Body, Controller, Post, Put } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { BaseClass } from 'src/core/common/base-class';
 import { marketCodeTableNameMap } from 'src/constant/stock-market';
 import { FireAntService } from 'src/data/stock/fireant.service';
 import { StockRepository } from 'src/data/stock/stock.repository';
@@ -9,12 +10,14 @@ import { DatabricksHistoricalData } from '@prisma/client';
 import { subDays } from 'date-fns';
 
 @Controller('historical-data')
-export class HistoricalDataController {
+export class HistoricalDataController extends BaseClass {
   constructor(
     private readonly stockRepository: StockRepository,
     private readonly fireAntService: FireAntService,
     private readonly historicalDataAnalyzer: HistoricalDataAnalyzer,
-  ) {}
+  ) {
+    super(HistoricalDataController.name);
+  }
 
   // TODO: removed this method once the data analysis is finished
   async analyzeHistoricalData(ticker: string) {
@@ -36,7 +39,7 @@ export class HistoricalDataController {
       await this.stockRepository.insertAnalyzedHistoricalData(data);
       lookbackDays -= 1;
     }
-    console.log('[HistoricalDataController] analyzeHistoricalData is finished');
+    this.logger.log('analyzeHistoricalData is finished');
   }
 
   @Cron('0 17 * * 1-5') // Runs everyday at 5:00:00 PM from Monday to Friday
@@ -46,7 +49,7 @@ export class HistoricalDataController {
 
   @Put('full-update')
   async fullUpdate() {
-    console.log('[HistoricalDataController] full update is started');
+    this.logger.log('full update is started');
     const now = new Date();
     const today = now.getDate();
     const month = now.getMonth() + 1;
@@ -112,7 +115,7 @@ export class HistoricalDataController {
     endDate: string;
   }) {
     try {
-      console.log('[HistoricalDataController] updateHistoricalData is started with date range', { startDate, endDate });
+      this.logger.log('updateHistoricalData is started with date range', { startDate, endDate });
       const marketTables = Object.values(marketCodeTableNameMap);
       for (const table of marketTables) {
         const tickers = this.stockRepository.getMarketDataByTableName(table);
@@ -125,10 +128,10 @@ export class HistoricalDataController {
         }
       }
     } catch (err) {
-      console.error('[HistoricalDataController] updateHistoricalData', err);
+      this.logger.error('[HistoricalDataController] updateHistoricalData', err.message);
     } finally {
-      console.log(
-        '[HistoricalDataController] updateHistoricalData is finished',
+      this.logger.log(
+        'updateHistoricalData is finished',
       );
     }
   }
@@ -165,9 +168,9 @@ export class HistoricalDataController {
         );
       }
     } catch (err) {
-      console.error(
-        '[HistoricalDataController] updateHistoricalDataByTicker',
-        err,
+      this.logger.error(
+        'Failed to updateHistoricalDataByTicker. Ticker: ' + ticker,
+        err.message,
       );
     }
   }
@@ -187,8 +190,8 @@ export class HistoricalDataController {
         sellQuantity: BigInt(item.sellQuantity),
       }));
     } catch (err) {
-      console.error('[HistoricalDataController] formatHistoricalData error', {
-        error: err,
+      this.logger.error('formatHistoricalData error', {
+        error: err.message,
         data: data,
       });
     }

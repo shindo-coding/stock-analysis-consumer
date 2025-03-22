@@ -17,7 +17,6 @@ import {
 	PrismaClient,
 	StockFilter,
 } from 'shindo-coding-typed-prisma-package';
-import { marketCodeTableNameMap } from 'src/constant/stock-market';
 
 type DuplicateStrategy = 'skip' | 'update' | 'error' | 'merge';
 
@@ -76,10 +75,6 @@ export class StockRepository {
 			for (let i = 0; i < data.length; i += batchSize) {
 				chunks.push(data.slice(i, i + batchSize));
 			}
-
-			console.log(
-				`[StockRepository] Starting bulk insert of ${data.length} records with '${duplicateStrategy}' strategy to table '${tableName}'`,
-			);
 
 			const startTime = Date.now();
 			const results = {
@@ -185,12 +180,9 @@ export class StockRepository {
 					}
 				});
 
-				console.log(`Processed chunk ${index + 1}/${chunks.length}`);
 			}
 
 			const duration = Date.now() - startTime;
-			console.log(`Operation completed in ${duration}ms`);
-
 			return {
 				success: true,
 				duration,
