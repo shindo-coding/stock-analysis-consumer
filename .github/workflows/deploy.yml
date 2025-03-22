@@ -17,7 +17,7 @@ jobs:
       EXPOSE_PORT: 80
       MEM_MIN: 128Mi
       CPU_MIN: 250m
-      MEM_MAX: 256Mi
+      MEM_MAX: 1Gi
       CPU_MAX: 500m
       SCALE_MIN: 1
       SCALE_MAX: 3
