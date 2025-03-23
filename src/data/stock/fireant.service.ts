@@ -219,7 +219,7 @@ export class FireAntService {
 						return postDate >= threeMonthsAgo;
 					})
 					.map((post) => ({
-						postId: post.postID,
+						postId: postId,
 						userId: post.user.id,
 						content: post.content || '',
 						date: post.date,
