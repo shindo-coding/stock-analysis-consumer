@@ -32,7 +32,7 @@ export class StockRepository {
 	#prisma: PrismaClient;
 
 	constructor(private prisma: PrismaService) {
-		this.#prisma = new PrismaClient();
+		this.#prisma = prisma;
 	}
 
 	async addStockToWatchlist({ code, lowerPrice, upperPrice }: StockWatchlist) {
@@ -85,101 +85,107 @@ export class StockRepository {
 			};
 
 			for (const [index, chunk] of chunks.entries()) {
-				await this.#prisma.$transaction(async (tx) => {
-					// Get the dynamic table from Prisma client
-					const table = tx[tableName];
+				await this.#prisma.$transaction(
+					async (tx) => {
+						// Get the dynamic table from Prisma client
+						const table = tx[tableName];
 
-					switch (duplicateStrategy) {
-						case 'skip':
-							const skipResult = await table.createMany({
-								data: chunk,
-								skipDuplicates: true,
-							});
-							results.inserted += skipResult.count;
-							results.skipped += chunk.length - skipResult.count;
-							break;
-
-						case 'update':
-							for (const record of chunk) {
-								const whereClause = uniqueFields.reduce(
-									(acc, field) => ({
-										...acc,
-										[field]: record[field],
-									}),
-									{},
-								);
-
-								const updateData =
-									updateFields.length > 0 ? pick(record, updateFields) : record;
-
-								const result = await table.upsert({
-									where: whereClause as any,
-									create: record,
-									update: updateData,
-								});
-
-								if (result.id) {
-									results.updated += 1;
-								} else {
-									results.inserted += 1;
-								}
-							}
-							break;
-
-						case 'merge':
-							for (const record of chunk) {
-								const whereClause = uniqueFields.reduce(
-									(acc, field) => ({
-										...acc,
-										[field]: record[field],
-									}),
-									{},
-								);
-
-								const existing = await table.findUnique({
-									where: whereClause as any,
-								});
-
-								if (existing) {
-									const mergedData = {
-										...existing,
-										...record,
-										updatedAt: new Date(),
-									};
-
-									await table.update({
-										where: whereClause as any,
-										data: mergedData,
-									});
-									results.updated += 1;
-								} else {
-									await table.create({
-										data: record,
-									});
-									results.inserted += 1;
-								}
-							}
-							break;
-
-						case 'error':
-							try {
-								const result = await table.createMany({
+						switch (duplicateStrategy) {
+							case 'skip':
+								const skipResult = await table.createMany({
 									data: chunk,
-									skipDuplicates: false,
+									skipDuplicates: true,
 								});
-								results.inserted += result.count;
-							} catch (error) {
-								if (error.code === 'P2002') {
-									throw new Error(
-										`Duplicate records found in chunk ${index + 1}`,
-									);
-								}
-								throw error;
-							}
-							break;
-					}
-				});
+								results.inserted += skipResult.count;
+								results.skipped += chunk.length - skipResult.count;
+								break;
 
+							case 'update':
+								for (const record of chunk) {
+									const whereClause = uniqueFields.reduce(
+										(acc, field) => ({
+											...acc,
+											[field]: record[field],
+										}),
+										{},
+									);
+
+									const updateData =
+										updateFields.length > 0
+											? pick(record, updateFields)
+											: record;
+
+									const result = await table.upsert({
+										where: whereClause as any,
+										create: record,
+										update: updateData,
+									});
+
+									if (result.id) {
+										results.updated += 1;
+									} else {
+										results.inserted += 1;
+									}
+								}
+								break;
+
+							case 'merge':
+								for (const record of chunk) {
+									const whereClause = uniqueFields.reduce(
+										(acc, field) => ({
+											...acc,
+											[field]: record[field],
+										}),
+										{},
+									);
+
+									const existing = await table.findUnique({
+										where: whereClause as any,
+									});
+
+									if (existing) {
+										const mergedData = {
+											...existing,
+											...record,
+											updatedAt: new Date(),
+										};
+
+										await table.update({
+											where: whereClause as any,
+											data: mergedData,
+										});
+										results.updated += 1;
+									} else {
+										await table.create({
+											data: record,
+										});
+										results.inserted += 1;
+									}
+								}
+								break;
+
+							case 'error':
+								try {
+									const result = await table.createMany({
+										data: chunk,
+										skipDuplicates: false,
+									});
+									results.inserted += result.count;
+								} catch (error) {
+									if (error.code === 'P2002') {
+										throw new Error(
+											`Duplicate records found in chunk ${index + 1}`,
+										);
+									}
+									throw error;
+								}
+								break;
+						}
+					},
+					{
+						timeout: 20000, // 20 seconds
+					},
+				);
 			}
 
 			const duration = Date.now() - startTime;
@@ -528,7 +534,11 @@ export class StockRepository {
 				},
 				distinct: ['code'],
 			});
-			const tickers = [...upcomMarketCodes, ...hnxMarketCodes, ...hsxMarketCodes];
+			const tickers = [
+				...upcomMarketCodes,
+				...hnxMarketCodes,
+				...hsxMarketCodes,
+			];
 			return tickers.map((ticker) => ticker.code);
 		} catch (error) {
 			logMessage('error', {

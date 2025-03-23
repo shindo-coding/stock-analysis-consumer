@@ -7,7 +7,7 @@ import { StockRepository } from 'src/data/stock/stock.repository';
 import { TickerHistorical } from 'src/data/stock/types';
 import { HistoricalDataAnalyzer } from './historical-data.analyzer';
 import { DatabricksHistoricalData } from '@prisma/client';
-import { subDays } from 'date-fns';
+import { subDays, subYears, format } from 'date-fns';
 
 @Controller('historical-data')
 export class HistoricalDataController extends BaseClass {
@@ -51,12 +51,8 @@ export class HistoricalDataController extends BaseClass {
   async fullUpdate() {
     this.logger.log('full update is started');
     const now = new Date();
-    const today = now.getDate();
-    const month = now.getMonth() + 1;
-    const year = now.getFullYear();
-    const lastYear = year - 1;
-    const startDate = `${lastYear}-${month}-${today}`;
-    const endDate = `${year}-${month}-${today}`;
+    const startDate = format(subYears(now, 1), 'yyyy-MM-dd');
+    const endDate = format(now, 'yyyy-MM-dd');
 
     // get all tickers
     this.updateHistoricalData({ startDate, endDate });
