@@ -394,6 +394,7 @@ export class StockRepository {
 			}));
 			const result = await this.prisma.tickerSuggestion.createMany({
 				data: records,
+				skipDuplicates: true,
 			});
 			return result;
 		} catch (err) {
