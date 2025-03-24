@@ -51,7 +51,7 @@ export class HistoricalDataController extends BaseClass {
   async fullUpdate() {
     this.logger.log('full update is started');
     const now = new Date();
-    const startDate = format(subYears(now, 1), 'yyyy-MM-dd');
+    const startDate = format(subYears(now, 2), 'yyyy-MM-dd');
     const endDate = format(now, 'yyyy-MM-dd');
 
     // get all tickers
